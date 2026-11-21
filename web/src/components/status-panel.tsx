@@ -35,7 +35,10 @@ async function runChecks(): Promise<Row[]> {
   const health = await fetch("/api/healthz", { cache: "no-store" });
   const ready = await fetch("/api/readyz", { cache: "no-store" });
   const readyBody = (await ready.json()) as Readyz;
-  const first = await ping();
+  // The first call always sets a fresh signed cookie; the round-trip passes when
+  // the second call sends it back. The first call may already carry a cookie from
+  // an earlier visit (reload, "Re-run checks"), so its result is not part of the check.
+  await ping();
   const second = await ping();
   const c = readyBody.checks;
   return [
@@ -51,7 +54,7 @@ async function runChecks(): Promise<Row[]> {
       ok: c.model.ok && c.embedding.ok,
       detail: c.embedding.dim ? `${c.embedding.dim}-d` : undefined,
     },
-    { label: "Cookie round-trip", ok: !first && second },
+    { label: "Cookie round-trip", ok: second },
   ];
 }
 
