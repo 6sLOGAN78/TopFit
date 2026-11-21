@@ -61,13 +61,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Every pull request shows passing ruff, pyright, pytest (testcontainers on the same pgvector image) and Docker build checks in GitHub Actions.
   5. API logs are JSON with request IDs. A test proves resume text, message content and email fields never appear in logs, and `.env.example` documents every secret.
 
-**Plans:** 7 plans (5 waves)
+**Plans:** 2/7 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Backend API slice: pinned uv package, /api/healthz, /api/readyz (pgvector extversion + 384-d probe), signed cookie ping, baseline migration, stub worker (wave 1)
-- [ ] 01-05-PLAN.md — Production deploy artifacts: Caddyfile (single origin), compose.prod.yaml, bootstrap/deploy/smoke/measure-memory scripts (wave 1)
+- [x] 01-01-PLAN.md — Backend API slice: pinned uv package, /api/healthz, /api/readyz (pgvector extversion + 384-d probe), signed cookie ping, baseline migration, stub worker (wave 1)
+- [x] 01-05-PLAN.md — Production deploy artifacts: Caddyfile (single origin), compose.prod.yaml, bootstrap/deploy/smoke/measure-memory scripts (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
