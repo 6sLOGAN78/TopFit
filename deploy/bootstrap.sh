@@ -11,7 +11,7 @@ Usage: bootstrap.sh --deploy-pubkey "<ssh public key>" --hostname <PUBLIC_HOSTNA
   --deploy-pubkey  public key line to authorise for the 'deploy' user (required)
   --hostname       public hostname served by Caddy (required)
   --email          ACME / Let's Encrypt contact email (required)
-  --ghcr-owner     GHCR owner, lowercased automatically (default: ayushmaurya-tech)
+  --ghcr-owner     GHCR owner, lowercased automatically (default: 6slogan78)
 USAGE
   exit 2
 }
@@ -19,7 +19,7 @@ USAGE
 PUBKEY=""
 HOSTNAME_ARG=""
 EMAIL=""
-GHCR_OWNER="ayushmaurya-tech"
+GHCR_OWNER="6slogan78"
 
 while [ $# -gt 0 ]; do
   case "$1" in
