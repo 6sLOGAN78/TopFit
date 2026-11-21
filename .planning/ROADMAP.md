@@ -185,7 +185,7 @@ Plans:
   3. Search p95 is under 300 ms at production index size (synthetic rows allowed if the real index is smaller). Every search is logged to `search_logs` with filters, per-feature scores, pipeline version and latency. A guest over 60 searches/hour gets a 429 in the standard error shape.
   4. One command runs the ranking eval on the frozen, deduplicated snapshot over 10–15 personas (human-reviewed grades, agreement reported) and reports nDCG@10, Recall@50, MRR and P@5 with bootstrap CIs. CI fails a PR that drops nDCG@10 by more than 0.02.
   5. Every production deploy runs Alembic migrations automatically, then a `/readyz` + one-search smoke test.
-  6. The API contract is enforced in CI: `docs/openapi.json` is regenerated and a stale copy fails the build; the web app's TypeScript types are generated from it, so a breaking API change fails the web build; Schemathesis runs against every endpoint and finds no 5xx or schema-mismatched responses.
+  6. The API contract is typed end to end: `docs/openapi.json` is regenerated from the Pydantic models and a stale copy fails CI; the web app uses Zod schemas and a typed query client generated from it, so a breaking API change fails the web build; `/api/docs` shows a Scalar API reference; Schemathesis runs against every endpoint and finds no 5xx or schema-mismatched responses.
 
 **Plans**: TBD
 **UI hint**: yes

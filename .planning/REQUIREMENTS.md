@@ -155,7 +155,7 @@
 - [ ] **OPS-07**: Daily database backups run and a restore procedure is documented in `docs/runbook.md`
 - [ ] **OPS-08**: Log retention keeps `search_logs` within the database storage budget
 - [ ] **OPS-09**: Load test shows `/jobs/search` sustaining 20 rps with p95 < 300 ms
-- [ ] **OPS-10** [MVP]: API contract is checked in CI: the FastAPI OpenAPI schema is exported to `docs/openapi.json` and CI fails if it is stale; web types are generated from it with `openapi-typescript` so API/UI drift fails the build; Schemathesis fuzzes every endpoint against the schema (no 5xx, responses match declared types and status codes)
+- [ ] **OPS-10** [MVP]: Typed API contract, following the owner's protask pattern adapted to a Python backend: Pydantic models are the single source of truth; the FastAPI OpenAPI schema is exported to `docs/openapi.json` and CI fails if it is stale; Zod schemas and a typed TanStack Query client are generated from it for the web app (e.g. Orval or @hey-api/openapi-ts; chosen at Phase 3 research), so API/UI drift fails the web build and responses are runtime-validated; a Scalar API reference page is served at `/api/docs`; Schemathesis fuzzes every endpoint against the schema (no 5xx, responses match declared types and status codes)
 
 ### Launch (LNCH)
 
