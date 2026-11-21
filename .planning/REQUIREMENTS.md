@@ -155,6 +155,7 @@
 - [ ] **OPS-07**: Daily database backups run and a restore procedure is documented in `docs/runbook.md`
 - [ ] **OPS-08**: Log retention keeps `search_logs` within the database storage budget
 - [ ] **OPS-09**: Load test shows `/jobs/search` sustaining 20 rps with p95 < 300 ms
+- [ ] **OPS-10** [MVP]: API contract is checked in CI: the FastAPI OpenAPI schema is exported to `docs/openapi.json` and CI fails if it is stale; web types are generated from it with `openapi-typescript` so API/UI drift fails the build; Schemathesis fuzzes every endpoint against the schema (no 5xx, responses match declared types and status codes)
 
 ### Launch (LNCH)
 
@@ -311,13 +312,14 @@ Deferred. Tracked but not in the current roadmap.
 | OPS-07 | Phase 6 | Pending |
 | OPS-08 | Phase 6 | Pending |
 | OPS-09 | Phase 6 | Pending |
+| OPS-10 | Phase 3 | Pending |
 | LNCH-01 | Phase 5 | Pending |
 | LNCH-02 | Phase 6 | Pending |
 | LNCH-03 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 114 total (88 marked [MVP])
-- Mapped to phases: 114 ✓
+- v1 requirements: 115 total (89 marked [MVP])
+- Mapped to phases: 115 ✓
 - Unmapped: 0
 - MVP (Phases 1–5): 89 requirements = all 88 [MVP] + FND-07 (pulled forward; MEM-02 depends on it)
 - v1 completion (Phase 6): 25 requirements (ING-13 may move to Phase 2 depending on the ING-00 spike)

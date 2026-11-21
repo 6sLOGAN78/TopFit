@@ -169,7 +169,7 @@ Plans:
 **Goal**: Any visitor can type a natural-language query on the landing page and quickly get relevant, filtered, fresh jobs. Retrieval quality is measured on a frozen eval set and protected by a CI gate.
 **Mode:** mvp
 **Depends on**: Phase 2
-**Requirements**: SRCH-02, SRCH-03, SRCH-04, SRCH-05, SRCH-06, SRCH-07, EVAL-01, EVAL-02, EVAL-03, EVAL-08, UI-01, UI-04, UI-05, UI-06, OPS-03, SEC-04
+**Requirements**: SRCH-02, SRCH-03, SRCH-04, SRCH-05, SRCH-06, SRCH-07, EVAL-01, EVAL-02, EVAL-03, EVAL-08, UI-01, UI-04, UI-05, UI-06, OPS-03, SEC-04, OPS-10
 **Success Criteria** (what must be TRUE):
 
   1. A guest types "backend python bengaluru 10 LPA remote ok" on the landing page without signing up and sees:
@@ -185,6 +185,7 @@ Plans:
   3. Search p95 is under 300 ms at production index size (synthetic rows allowed if the real index is smaller). Every search is logged to `search_logs` with filters, per-feature scores, pipeline version and latency. A guest over 60 searches/hour gets a 429 in the standard error shape.
   4. One command runs the ranking eval on the frozen, deduplicated snapshot over 10–15 personas (human-reviewed grades, agreement reported) and reports nDCG@10, Recall@50, MRR and P@5 with bootstrap CIs. CI fails a PR that drops nDCG@10 by more than 0.02.
   5. Every production deploy runs Alembic migrations automatically, then a `/readyz` + one-search smoke test.
+  6. The API contract is enforced in CI: `docs/openapi.json` is regenerated and a stale copy fails the build; the web app's TypeScript types are generated from it, so a breaking API change fails the web build; Schemathesis runs against every endpoint and finds no 5xx or schema-mismatched responses.
 
 **Plans**: TBD
 **UI hint**: yes
