@@ -52,7 +52,9 @@ Detailed, ID-tagged requirements live in `.planning/REQUIREMENTS.md` (sourced fr
 
 ## Constraints
 
-- **Tech stack**: Python 3.12 + uv, FastAPI, Pydantic v2, SQLAlchemy 2 + Alembic, psycopg 3, PostgreSQL 16 + pgvector, fastembed; Next.js (App Router) + TypeScript + Tailwind + shadcn/ui — chosen in SPEC.md §16 to match Elip's stack (Python backends, SQL, embeddings)
+- **Tech stack**: Python 3.14 + uv, FastAPI (native SSE), Pydantic v2, SQLAlchemy 2.1 `[asyncio]` + Alembic, psycopg 3, PostgreSQL 18 + pgvector ≥ 0.8.3 (0.8.7), fastembed; Next.js (App Router) + TypeScript ~5.9.3 (not 7.x) + Tailwind 4 + shadcn/ui; APScheduler < 4 — SPEC.md §16 stack with research-corrected pins (see `.planning/research/STACK.md`)
+- **Hosting**: custom domain required (platform subdomains break the SameSite session cookie); default plan is one small VPS running Postgres, api (1 uvicorn worker), worker and Caddy via Docker Compose, with web on Vercel; embedding model baked into the image
+- **Data sources**: Remotive returned only 16 jobs on 2026-11-21 and Adzuna's free quota is ~250 calls/day (unconfirmed) — a source-viability spike (ING-00) decides the real source mix and job-count target before ingestion code
 - **Single datastore**: Postgres + pgvector only, no separate vector DB or Redis — one system to run, shows SQL skill
 - **Budget**: ≤ ₹2,500/month (~$30) total infra + LLM at launch; LLM spend capped in code (default $20/month) with graceful degradation
 - **Timeline**: MVP deployed in ~10–12 days; full v1 in ~20–27 days

@@ -198,16 +198,130 @@ Deferred. Tracked but not in the current roadmap.
 
 ## Traceability
 
-Filled by the roadmapper.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| FND-01 | Phase 1 | Pending |
+| FND-02 | Phase 1 | Pending |
+| FND-03 | Phase 1 | Pending |
+| FND-04 | Phase 1 | Pending |
+| FND-05 | Phase 1 | Pending |
+| FND-06 | Phase 2 | Pending |
+| FND-07 | Phase 2 | Pending |
+| FND-08 | Phase 4 | Pending |
+| ING-00 | Phase 2 | Pending |
+| ING-01 | Phase 2 | Pending |
+| ING-02 | Phase 2 | Pending |
+| ING-03 | Phase 6 | Pending |
+| ING-04 | Phase 2 | Pending |
+| ING-05 | Phase 2 | Pending |
+| ING-06 | Phase 2 | Pending |
+| ING-07 | Phase 2 | Pending |
+| ING-08 | Phase 2 | Pending |
+| ING-09 | Phase 2 | Pending |
+| ING-10 | Phase 6 | Pending |
+| ING-11 | Phase 2 | Pending |
+| ING-12 | Phase 2 | Pending |
+| ING-13 | Phase 6 | Pending |
+| NORM-01 | Phase 2 | Pending |
+| NORM-02 | Phase 2 | Pending |
+| NORM-03 | Phase 2 | Pending |
+| NORM-04 | Phase 2 | Pending |
+| NORM-05 | Phase 2 | Pending |
+| NORM-06 | Phase 2 | Pending |
+| NORM-07 | Phase 2 | Pending |
+| SRCH-01 | Phase 2 | Pending |
+| SRCH-02 | Phase 3 | Pending |
+| SRCH-03 | Phase 3 | Pending |
+| SRCH-04 | Phase 3 | Pending |
+| SRCH-05 | Phase 3 | Pending |
+| SRCH-06 | Phase 3 | Pending |
+| SRCH-07 | Phase 3 | Pending |
+| SRCH-08 | Phase 6 | Pending |
+| PROF-01 | Phase 4 | Pending |
+| PROF-02 | Phase 4 | Pending |
+| PROF-03 | Phase 4 | Pending |
+| PROF-04 | Phase 4 | Pending |
+| PROF-05 | Phase 6 | Pending |
+| PROF-06 | Phase 4 | Pending |
+| RANK-01 | Phase 4 | Pending |
+| RANK-02 | Phase 4 | Pending |
+| RANK-03 | Phase 4 | Pending |
+| RANK-04 | Phase 4 | Pending |
+| RANK-05 | Phase 4 | Pending |
+| RANK-06 | Phase 4 | Pending |
+| RANK-07 | Phase 4 | Pending |
+| RANK-08 | Phase 4 | Pending |
+| RANK-09 | Phase 6 | Pending |
+| RANK-10 | Phase 6 | Pending |
+| RANK-11 | Phase 4 | Pending |
+| AGENT-01 | Phase 5 | Pending |
+| AGENT-02 | Phase 5 | Pending |
+| AGENT-03 | Phase 5 | Pending |
+| AGENT-04 | Phase 5 | Pending |
+| AGENT-05 | Phase 5 | Pending |
+| AGENT-06 | Phase 5 | Pending |
+| AGENT-07 | Phase 6 | Pending |
+| AGENT-08 | Phase 5 | Pending |
+| AGENT-09 | Phase 5 | Pending |
+| MEM-01 | Phase 5 | Pending |
+| MEM-02 | Phase 5 | Pending |
+| MEM-03 | Phase 5 | Pending |
+| MEM-04 | Phase 6 | Pending |
+| MEM-05 | Phase 5 | Pending |
+| MEM-06 | Phase 5 | Pending |
+| EVAL-01 | Phase 3 | Pending |
+| EVAL-02 | Phase 3 | Pending |
+| EVAL-03 | Phase 3 | Pending |
+| EVAL-04 | Phase 4 | Pending |
+| EVAL-05 | Phase 6 | Pending |
+| EVAL-06 | Phase 5 | Pending |
+| EVAL-07 | Phase 6 | Pending |
+| EVAL-08 | Phase 3 | Pending |
+| EVAL-09 | Phase 6 | Pending |
+| EVAL-10 | Phase 6 | Pending |
+| UI-01 | Phase 3 | Pending |
+| UI-02 | Phase 4 | Pending |
+| UI-03 | Phase 4 | Pending |
+| UI-04 | Phase 3 | Pending |
+| UI-05 | Phase 3 | Pending |
+| UI-06 | Phase 3 | Pending |
+| UI-07 | Phase 5 | Pending |
+| UI-08 | Phase 4 | Pending |
+| UI-09 | Phase 5 | Pending |
+| UI-10 | Phase 6 | Pending |
+| UI-11 | Phase 6 | Pending |
+| UI-12 | Phase 5 | Pending |
+| UI-13 | Phase 5 | Pending |
+| UI-14 | Phase 6 | Pending |
+| UI-15 | Phase 6 | Pending |
+| SEC-01 | Phase 4 | Pending |
+| SEC-02 | Phase 6 | Pending |
+| SEC-03 | Phase 4 | Pending |
+| SEC-04 | Phase 3 | Pending |
+| SEC-05 | Phase 4 | Pending |
+| SEC-06 | Phase 4 | Pending |
+| SEC-07 | Phase 1 | Pending |
+| SEC-08 | Phase 6 | Pending |
+| OPS-01 | Phase 1 | Pending |
+| OPS-02 | Phase 2 | Pending |
+| OPS-03 | Phase 3 | Pending |
+| OPS-04 | Phase 1 | Pending |
+| OPS-05 | Phase 5 | Pending |
+| OPS-06 | Phase 6 | Pending |
+| OPS-07 | Phase 6 | Pending |
+| OPS-08 | Phase 6 | Pending |
+| OPS-09 | Phase 6 | Pending |
+| LNCH-01 | Phase 5 | Pending |
+| LNCH-02 | Phase 6 | Pending |
+| LNCH-03 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 114 total (88 marked [MVP])
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 114 ⚠️
+- Mapped to phases: 114 ✓
+- Unmapped: 0
+- MVP (Phases 1–5): 89 requirements = all 88 [MVP] + FND-07 (pulled forward; MEM-02 depends on it)
+- v1 completion (Phase 6): 25 requirements (ING-13 may move to Phase 2 depending on the ING-00 spike)
 
 ---
 *Requirements defined: 2026-11-21*
-*Last updated: 2026-11-21 after initialization (auto mode, research-corrected)*
+*Last updated: 2026-11-21 after roadmap creation (traceability filled)*
