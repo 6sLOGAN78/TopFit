@@ -22,8 +22,9 @@ The user delegated every Phase 1 decision to Claude ("choose everything accordin
 ### Hosting and cost
 - **D-01: Zero-cost first.** The user is a student. The primary path is the **GitHub Student Developer Pack**: a free 1-year domain (e.g. `.me`/`.tech` via its registrar partners) and DigitalOcean credit. The user verifies which offers are live and claims them; that is a **human checkpoint** in the plan.
 - **D-02: Server = one DigitalOcean droplet in the Bangalore region (BLR1)**, Ubuntu 24.04 LTS, ≥ 4 GB RAM, paid from student credit. This replaces the research default (Hetzner Singapore): it costs $0 with the pack, has lower latency for Indian users, and avoids Hetzner's identity-verification friction. Fallback order if the pack isn't available:
-  1. Oracle Cloud Always Free ARM VM in an Indian region (Mumbai/Hyderabad); ARM64 is fine, and the onnxruntime/fastembed ARM wheels must be confirmed.
-  2. Hetzner Singapore (~€5.50/mo).
+  1. Google Cloud: e2-medium (4 GB) in `asia-south1` (Mumbai) paid by the $300 / 90-day new-account credit. The user asked about GCP and it is acceptable. Note the credit expires after 90 days (then ~$25–30/mo or migrate). The always-free e2-micro (1 GB, US regions only) is too small and must not be used. On GCP, open 80/443 via VPC firewall rules in addition to ufw, and use a static external IP.
+  2. Oracle Cloud Always Free ARM VM in an Indian region (Mumbai/Hyderabad); ARM64 is fine, and the onnxruntime/fastembed ARM wheels must be confirmed.
+  3. Hetzner Singapore (~€5.50/mo).
   Planning must keep the deploy provider-agnostic: plain Ubuntu + Docker, nothing DO-specific.
 - **D-03: Domain fallback = free dynamic-DNS hostname** (e.g. `ranker.duckdns.org`) if no free registrable domain is available. The design must work with either: the hostname is one env var (`PUBLIC_HOSTNAME`), never hard-coded.
 
