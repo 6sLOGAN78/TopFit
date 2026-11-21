@@ -8,14 +8,14 @@ os.environ.setdefault("EMBEDDER", "fake")
 os.environ.setdefault("APP_ENV", "test")
 os.environ.setdefault("COOKIE_SECURE", "true")
 
-import pytest  # noqa: E402
-from alembic import command  # noqa: E402
-from alembic.config import Config  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
-from testcontainers.community.postgres import PostgresContainer  # noqa: E402
+import pytest
+from alembic import command
+from alembic.config import Config
+from fastapi.testclient import TestClient
+from testcontainers.community.postgres import PostgresContainer
 
-from ranker.main import create_app  # noqa: E402
-from ranker.settings import get_settings  # noqa: E402
+from ranker.main import create_app
+from ranker.settings import get_settings
 
 PG_IMAGE = "pgvector/pgvector:0.8.7-pg18-trixie"
 BACKEND_DIR = Path(__file__).resolve().parent.parent

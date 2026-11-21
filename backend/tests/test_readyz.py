@@ -62,7 +62,7 @@ def test_readyz_model_load_failure(
 def test_readyz_db_down_does_not_leak_password(
     make_client: Callable[[dict[str, str]], TestClient],
 ) -> None:
-    secret = "s3cr3tpassw0rd"  # noqa: S105
+    secret = "s3cr3tpassw0rd"
     c = make_client({"DATABASE_URL": f"postgresql+psycopg://u:{secret}@127.0.0.1:1/none"})
     r = c.get("/api/readyz")
     assert r.status_code == 503
