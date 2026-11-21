@@ -61,7 +61,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Every pull request shows passing ruff, pyright, pytest (testcontainers on the same pgvector image) and Docker build checks in GitHub Actions.
   5. API logs are JSON with request IDs. A test proves resume text, message content and email fields never appear in logs, and `.env.example` documents every secret.
 
-**Plans:** 2/7 plans executed
+**Plans:** 4/7 plans executed
 
 Plans:
 **Wave 1**
@@ -71,8 +71,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-02-PLAN.md — Web status page: pinned Next.js 16 + shadcn shell running health and cookie round-trip checks against the real API (wave 2)
-- [ ] 01-03-PLAN.md — SEC-07 logging: structlog JSON, request IDs, PII redaction proven on rendered output (wave 2)
+- [x] 01-02-PLAN.md — Web status page: pinned Next.js 16 + shadcn shell running health and cookie round-trip checks against the real API (wave 2)
+- [x] 01-03-PLAN.md — SEC-07 logging: structlog JSON, request IDs, PII redaction proven on rendered output (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
