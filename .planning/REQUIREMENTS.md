@@ -156,6 +156,7 @@
 - [ ] **OPS-08**: Log retention keeps `search_logs` within the database storage budget
 - [ ] **OPS-09**: Load test shows `/jobs/search` sustaining 20 rps with p95 < 300 ms
 - [ ] **OPS-10** [MVP]: Typed API contract, following the owner's protask pattern adapted to a Python backend: Pydantic models are the single source of truth; the FastAPI OpenAPI schema is exported to `docs/openapi.json` and CI fails if it is stale; Zod schemas and a typed TanStack Query client are generated from it for the web app (e.g. Orval or @hey-api/openapi-ts; chosen at Phase 3 research), so API/UI drift fails the web build and responses are runtime-validated; a Scalar API reference page is served at `/api/docs`; Schemathesis fuzzes every endpoint against the schema (no 5xx, responses match declared types and status codes)
+- [ ] **OPS-11**: Prometheus and Grafana run as Compose services on the production host (not exposed directly; Grafana is served behind Caddy at `/grafana` with a login). Prometheus scrapes the `/metrics` endpoint from OPS-06. Grafana dashboards and datasources are provisioned as code in the repo, covering request rate/latency p50/p95/p99 and error rate, search latency, LLM calls/tokens/cost and degraded-mode rate, ingest runs and index size, and host/container memory. At least one alert rule exists (e.g. 5xx rate or readyz down). Retention and memory limits are set so the stack fits the VM budget recorded in ADR 0000
 
 ### Launch (LNCH)
 
@@ -313,13 +314,14 @@ Deferred. Tracked but not in the current roadmap.
 | OPS-08 | Phase 6 | Pending |
 | OPS-09 | Phase 6 | Pending |
 | OPS-10 | Phase 3 | Pending |
+| OPS-11 | Phase 6 | Pending |
 | LNCH-01 | Phase 5 | Pending |
 | LNCH-02 | Phase 6 | Pending |
 | LNCH-03 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 115 total (89 marked [MVP])
-- Mapped to phases: 115 ✓
+- v1 requirements: 116 total (89 marked [MVP])
+- Mapped to phases: 116 ✓
 - Unmapped: 0
 - MVP (Phases 1–5): 89 requirements = all 88 [MVP] + FND-07 (pulled forward; MEM-02 depends on it)
 - v1 completion (Phase 6): 25 requirements (ING-13 may move to Phase 2 depending on the ING-00 spike)
