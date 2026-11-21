@@ -5,6 +5,7 @@ import signal
 
 import structlog
 
+from ranker.observability import configure_logging
 from ranker.settings import get_settings
 
 
@@ -28,6 +29,7 @@ async def run(stop: asyncio.Event | None = None) -> None:
 
 
 def main() -> None:
+    configure_logging(get_settings().log_level)
     asyncio.run(run())
 
 

@@ -12,9 +12,11 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
+from ranker.observability import configure_logging
 from ranker.settings import get_settings
 
 config = context.config
+configure_logging(get_settings().log_level)
 
 # Phase 2 adds ORM models and sets this to Base.metadata.
 target_metadata = None

@@ -60,7 +60,7 @@ def test_email_in_free_text() -> None:
 def test_stdlib_records_and_extras() -> None:
     buf = _configure()
     logging.getLogger("uvicorn.error").warning("x %s", "carol@example.net")
-    logging.getLogger("sqlalchemy.engine").info("q", extra={"content": "SECRET_MSG_456"})
+    logging.getLogger("sqlalchemy.engine").warning("q", extra={"content": "SECRET_MSG_456"})
     raw = buf.getvalue()
     assert len(_lines(buf)) >= 2
     assert "carol@example.net" not in raw
@@ -88,6 +88,7 @@ def test_exception_locals_not_logged() -> None:
 
 def test_request_log_line_has_no_secrets(client: Any) -> None:
     buf = _configure()
+    logging.getLogger("httpx").setLevel(logging.WARNING)  # test client's own URL log
     resp = client.get(
         "/api/healthz?q=QUERY_SECRET_C",
         headers={"Authorization": "Bearer TOKEN_SECRET_A", "Cookie": "rk_ping=COOKIE_SECRET_B"},
