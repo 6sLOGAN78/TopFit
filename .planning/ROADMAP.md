@@ -117,7 +117,7 @@ Plans:
      - runnable against the fake provider in tests
 
      Background jobs enqueued in `tasks` are picked up by the worker exactly once, using `SKIP LOCKED`.
-**Plans:** 14 plans
+**Plans:** 15 plans
 
 Plans:
 **Wave 1**
@@ -127,36 +127,40 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-03-PLAN.md — LLM gateway: fake + Anthropic providers, llm_calls logging, $5 monthly budget, typed schemas (FND-06)
+- [ ] 02-03-PLAN.md — LLM gateway: fake + Anthropic providers, llm_calls logging, $5 monthly budget, typed schemas, content-block pass-through (FND-06)
 - [ ] 02-04-PLAN.md — Location, remote-eligibility and tech/geo scope rules + ADR 0002 (NORM-02, NORM-03)
 - [ ] 02-05-PLAN.md — Salary/FX, seniority/employment and company normalisers + ADR 0003 (NORM-04, NORM-05, NORM-07)
 - [ ] 02-06-PLAN.md — ≥ 400-skill taxonomy + matcher and description cleaner (NORM-06, NORM-01)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-07-PLAN.md — Remotive end-to-end slice: jobs schema, SourceAdapter contract, retrying HTTP, idempotent upsert, ingest_runs, `ranker ingest`
+- [ ] 02-07-PLAN.md — Remotive slice part 1: jobs-index migration, SourceAdapter contract, retrying HTTP with per-attempt counting, Remotive adapter (ING-01, ING-04, ING-07)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 02-08-PLAN.md — Embeddings in every run + `ranker embed` backfill, change-only re-embed (SRCH-01, ING-09)
-- [ ] 02-09-PLAN.md — Adzuna adapter within the measured quota, auto-backfill, key redaction (ING-02)
-- [ ] 02-11-PLAN.md — LLM fallback enrichment tasks with cache and no-key deferral (NORM-03/05, D-08, D-11)
+- [ ] 02-08-PLAN.md — Remotive slice part 2: normalize_job, hashing, idempotent upsert, ingest_runs lifecycle, `ranker ingest` (ING-05, ING-06, ING-11)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 02-10-PLAN.md — Expiry (absence/TTL) with 50% volume guard, simple dedupe, `purge-source` (ING-08)
+- [ ] 02-09-PLAN.md — Embeddings in every run + `ranker embed` backfill, change-only re-embed (SRCH-01, ING-09)
+- [ ] 02-10-PLAN.md — Adzuna adapter within the measured quota (every retry counted), auto-backfill, key redaction (ING-02)
+- [ ] 02-12-PLAN.md — LLM fallback enrichment tasks with cache, no-key deferral and a 7-day outage deferral cap (NORM-03/05, D-08, D-11)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 02-12-PLAN.md — Scheduled sources in the leader worker, ingest/TTL handlers, admin trigger endpoint, config self-check, memory limits (OPS-02, ING-11)
+- [ ] 02-11-PLAN.md — Expiry (absence/TTL) with 50% volume guard, simple dedupe, `purge-source` (ING-08)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 02-13-PLAN.md — Greenhouse/Lever boards with guarded discovery — executes only if ADR 0001 says pull-in (ING-13)
+- [ ] 02-13-PLAN.md — Scheduled sources in the leader worker, ingest/TTL handlers, admin trigger endpoint, config self-check, memory limits (OPS-02, ING-11)
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 02-14-PLAN.md — Production secrets, backfill, measurement and ING-12 verdict in ADR 0001 (owner checkpoints)
+- [ ] 02-14-PLAN.md — Greenhouse/Lever boards with seed sync on every fetch and guarded discovery — executes only if ADR 0001 says pull-in (ING-13)
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 02-15-PLAN.md — Production secrets, one-off-container backfill, measurement and ING-12 verdict in ADR 0001 (owner checkpoints)
 
 **Research**: Yes. Run `/gsd:plan-phase --research-phase 2`: live Adzuna quota, `results_per_page`/`max_days_old`/`sort_by`, ToS on storing descriptions; Greenhouse/Lever board APIs as a fallback volume source.
 

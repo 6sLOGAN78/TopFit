@@ -790,18 +790,22 @@ Framework: pytest 9.2 + pytest-asyncio 1.5 (`asyncio_mode=auto`) + testcontainer
 | A11 | Adzuna's ToS permits a free, non-revenue portfolio app that publishes listings with attribution under "publishing Adzuna ad listings" | Source Facts | Access could be revoked. **User should confirm, or email Adzuna. Record in ADR 0001.** |
 | A12 | HNSW index ≈ 20–30 MB at 10k rows | Pitfall 8 | Negligible |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **What is the real Adzuna quota, and what is the India IT volume?**
    - What we know: the quota is not published and third-party numbers conflict. `count` will reveal the volume.
    - Recommendation: the first plan is the human checkpoint plus the spike. The ADR sets the target before the adapters are tuned.
+   - RESOLVED: 02-01 Task 2 (owner sitting reads the Adzuna quota) and 02-01 Task 3 (live spike measures volume; ADR 0001 records quota, volume and the active-job target). 02-10 sizes the Adzuna budget from the ADR.
 2. **Does Adzuna's free tier allow this app?**
    - What we know: "intended for evaluating", but "publishing Adzuna ad listings" is a permitted use, with attribution.
    - Recommendation: record the reading in the ADR. Consider a short email to Adzuna (owner action). Keep `purge-source` ready.
+   - RESOLVED: 02-01 Task 2 (owner reads the terms) and 02-01 Task 3 (terms reading recorded in ADR 0001); `purge-source` is built in 02-11.
 3. **Should ING-13 come into this phase?**
    - Recommendation: build the adapter interface so Greenhouse/Lever is a drop-in. Decide after the spike, per D-01. Plans should make the Greenhouse/Lever plan conditional, either as a separate wave or a plan that is skipped if the ADR says no.
+   - RESOLVED: 02-01 Task 3 writes the `ING-13 decision:` line in ADR 0001; the gated plan 02-14 Task 1 Step 0 reads it and stops with a SUMMARY if the value is `not-needed`.
 4. **Is `data analyst` / `system administrator` in scope?**
    - Recommendation: include data analyst (data) and exclude sysadmin/IT admin (D-05). Note it in `scope.yaml`.
+   - RESOLVED: 02-04 Task 3 `scope.yaml` puts data analyst in scope (data family) and system administrator / IT admin out of scope, with labelled-title tests.
 
 ## Sources
 
