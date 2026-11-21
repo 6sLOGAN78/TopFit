@@ -61,7 +61,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Every pull request shows passing ruff, pyright, pytest (testcontainers on the same pgvector image) and Docker build checks in GitHub Actions.
   5. API logs are JSON with request IDs. A test proves resume text, message content and email fields never appear in logs, and `.env.example` documents every secret.
 
-**Plans:** 5/7 plans executed
+**Plans:** 6/7 plans executed
 
 Plans:
 **Wave 1**
@@ -80,7 +80,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 01-06-PLAN.md — GitHub Actions: CI gates, offline image smoke, GHCR publish, secrets-gated SSH deploy + HTTPS smoke (wave 4)
+- [x] 01-06-PLAN.md — GitHub Actions: CI gates, offline image smoke, GHCR publish, secrets-gated SSH deploy + HTTPS smoke (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
