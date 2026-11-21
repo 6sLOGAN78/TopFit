@@ -907,17 +907,17 @@ CMD ["node", "server.js"]
 | A10 | Memory estimates (api 250–400 MB with model, web 80–150 MB, db 60–150 MB idle, caddy 20–40 MB, worker 50–80 MB) | Summary/ADR | This is exactly what D-20 measures. A 4 GB VM leaves ample headroom either way. |
 | A11 | DuckDNS update URL `https://www.duckdns.org/update?domains=<sub>&token=<tok>&ip=` (blank ip = auto-detect); a static VPS IP only needs setting once in the web UI | Open Questions | Low. Not needed if the Student Pack domain is used. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Which domain path will the user actually get?**
    - What we know: the Student Pack currently lists a Namecheap 1-year `.me` domain and $200 DO credit (1 year) [search results; the user must confirm at education.github.com/pack]. DuckDNS is on the PSL, so cookies and LE limits are isolated.
-   - Recommendation: the plan treats `PUBLIC_HOSTNAME` as an opaque input collected at the human checkpoint. Both paths need only one A record pointing at the VM IP. With Namecheap: Advanced DNS → A record `@` (and optionally `www`) → IP, TTL 5 min.
+   - RESOLVED: Recommendation: the plan treats `PUBLIC_HOSTNAME` as an opaque input collected at the human checkpoint. Both paths need only one A record pointing at the VM IP. With Namecheap: Advanced DNS → A record `@` (and optionally `www`) → IP, TTL 5 min.
 2. **Should images be multi-arch from day one?**
-   - Recommendation: no. Use a `PLATFORMS` repo variable (default `linux/amd64`). The arm64 wheels are verified, so switching later is a config change.
+   - RESOLVED: Recommendation: no. Use a `PLATFORMS` repo variable (default `linux/amd64`). The arm64 wheels are verified, so switching later is a config change.
 3. **Playwright vs curl for the prod cookie smoke (D-21 allows either)?**
-   - Recommendation: curl + jq in CD (Pattern 8). It exercises Caddy, TLS and the Secure cookie end to end. A Playwright browser check of the ✓/✗ UI can wait for the Phase 4/5 E2E suite.
-4. **Who runs `bootstrap.sh`?** It needs root SSH once. DO injects the user's key for root at droplet creation. Recommendation: the human checkpoint includes `ssh root@IP 'bash -s' < deploy/bootstrap.sh -- …` (or pasting the script as droplet "User data"/cloud-init). Everything after that is automated.
-5. **Batched human checkpoint (one sitting), in this order:**
+   - RESOLVED: Recommendation: curl + jq in CD (Pattern 8). It exercises Caddy, TLS and the Secure cookie end to end. A Playwright browser check of the ✓/✗ UI can wait for the Phase 4/5 E2E suite.
+4. **Who runs `bootstrap.sh`?** It needs root SSH once. DO injects the user's key for root at droplet creation. RESOLVED: Recommendation: the human checkpoint includes `ssh root@IP 'bash -s' < deploy/bootstrap.sh -- …` (or pasting the script as droplet "User data"/cloud-init). Everything after that is automated.
+5. **Batched human checkpoint (one sitting), in this order:** RESOLVED (adopted by plan 01-07).
    1. Claim the Student Pack, then DO credit and the domain.
    2. Create the droplet in BLR1, Ubuntu 24.04, 4 GB, with an SSH key.
    3. Create the DNS A record.
