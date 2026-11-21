@@ -1,0 +1,28 @@
+{
+	email {$ACME_EMAIL}
+	# Uncomment for first attempts to avoid Let's Encrypt production rate limits:
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+{$PUBLIC_HOSTNAME} {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# /api/* does not match /api, so match both. Path is passed through unchanged.
+	@api path /api /api/*
+	handle @api {
+		# No compression here and no buffering: SSE-safe.
+		reverse_proxy api:8000 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		encode zstd gzip
+		reverse_proxy web:3000
+	}
+}
