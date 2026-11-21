@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     embed_threads: int = 2
     log_level: str = "INFO"
     worker_heartbeat_seconds: float = 30.0
+    task_poll_seconds: float = 2.0
+    task_lease_seconds: int = 1800
 
 
 @lru_cache
