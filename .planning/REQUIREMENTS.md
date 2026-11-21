@@ -11,11 +11,11 @@
 
 ### Foundations (FND)
 
-- [ ] **FND-01** [MVP]: Developer can start db, api, worker and web locally with one command (`make dev`, Docker Compose, `pgvector/pgvector` PG18 image, pgvector ≥ 0.8.3)
-- [ ] **FND-02** [MVP]: Toolchain is pinned: Python 3.14 + uv, FastAPI, Pydantic v2, SQLAlchemy 2.1 (`[asyncio]`), Alembic, psycopg 3; Next.js App Router + TypeScript 5.9.x (not 7.x), Tailwind, shadcn/ui; APScheduler < 4
-- [ ] **FND-03** [MVP]: Every PR runs lint (ruff), type-check (pyright), tests and Docker build in GitHub Actions
-- [ ] **FND-04** [MVP]: A walking skeleton (API with the embedding model loaded + Postgres with pgvector) is deployed to the target host in the first phase, proving memory fit, pgvector version and cold-start behaviour before feature work
-- [ ] **FND-05** [MVP]: The embedding model is baked into the Docker image (`FASTEMBED_CACHE_PATH`), so startup needs no network download
+- [x] **FND-01** [MVP]: Developer can start db, api, worker and web locally with one command (`make dev`, Docker Compose, `pgvector/pgvector` PG18 image, pgvector ≥ 0.8.3)
+- [x] **FND-02** [MVP]: Toolchain is pinned: Python 3.14 + uv, FastAPI, Pydantic v2, SQLAlchemy 2.1 (`[asyncio]`), Alembic, psycopg 3; Next.js App Router + TypeScript 5.9.x (not 7.x), Tailwind, shadcn/ui; APScheduler < 4
+- [x] **FND-03** [MVP]: Every PR runs lint (ruff), type-check (pyright), tests and Docker build in GitHub Actions
+- [x] **FND-04** [MVP]: A walking skeleton (API with the embedding model loaded + Postgres with pgvector) is deployed to the target host in the first phase, proving memory fit, pgvector version and cold-start behaviour before feature work
+- [x] **FND-05** [MVP]: The embedding model is baked into the Docker image (`FASTEMBED_CACHE_PATH`), so startup needs no network download
 - [ ] **FND-06** [MVP]: All LLM calls go through one gateway (`ranker/llm/`) with timeout, retry, per-call logging to `llm_calls`, monthly budget check, a fake provider for tests, typed structured outputs (no free-form `dict` fields) and correct pass-through of thinking/tool content blocks
 - [ ] **FND-07**: Async background work (memory extraction, feedback-vector updates, embedding backfill) runs through a Postgres `tasks` table using `SKIP LOCKED`, processed by the worker
 - [ ] **FND-08** [MVP]: Route handlers and agent tools both call one `services/` layer; ranking exposes a DB-free `rank(candidates, user, config)` function used by production, evals and weight tuning alike
@@ -141,15 +141,15 @@
 - [ ] **SEC-04** [MVP]: Rate limits (guest: 20 chat messages/day, 60 searches/hour; signed-in: 100/day, 300/hour) are enforced with a Postgres-backed counter and return 429 in the standard error shape
 - [ ] **SEC-05** [MVP]: User can delete all their data; a test verifies zero rows remain in every user-linked table
 - [ ] **SEC-06** [MVP]: Monthly LLM budget cap: at 80% rerank is disabled for guests; at 100% chat pauses and search runs degraded
-- [ ] **SEC-07** [MVP]: No PII or resume text appears in logs, error tracking or `llm_calls`; secrets live only in env vars with `.env.example` documenting each
+- [x] **SEC-07** [MVP]: No PII or resume text appears in logs, error tracking or `llm_calls`; secrets live only in env vars with `.env.example` documenting each
 - [ ] **SEC-08**: CI runs `pip-audit` and `npm audit`
 
 ### Operations (OPS)
 
-- [ ] **OPS-01** [MVP]: Production runs on a public HTTPS custom domain (default plan: one small VPS running Postgres, api, worker and Caddy via Docker Compose, web on Vercel or the same host; fallback Neon + Railway)
+- [x] **OPS-01** [MVP]: Production runs on a public HTTPS custom domain (default plan: one small VPS running Postgres, api, worker and Caddy via Docker Compose, web on Vercel or the same host; fallback Neon + Railway)
 - [ ] **OPS-02** [MVP]: Scheduled ingestion runs in exactly one worker process (never inside multi-worker API processes or on a host that sleeps)
 - [ ] **OPS-03** [MVP]: Alembic migrations run automatically on deploy; deploy runs a `/readyz` + one-search smoke test
-- [ ] **OPS-04** [MVP]: `/healthz` and `/readyz` (DB reachable, model loaded) exist; JSON logs carry request IDs
+- [x] **OPS-04** [MVP]: `/healthz` and `/readyz` (DB reachable, model loaded) exist; JSON logs carry request IDs
 - [ ] **OPS-05** [MVP]: Errors go to Sentry (or equivalent); an uptime monitor pings `/healthz`
 - [ ] **OPS-06**: Prometheus `/metrics` exposes request latency, LLM latency/tokens and ingest counts (multiprocess-safe)
 - [ ] **OPS-07**: Daily database backups run and a restore procedure is documented in `docs/runbook.md`
@@ -202,11 +202,11 @@ Deferred. Tracked but not in the current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | Phase 1 | Pending |
-| FND-02 | Phase 1 | Pending |
-| FND-03 | Phase 1 | Pending |
-| FND-04 | Phase 1 | Pending |
-| FND-05 | Phase 1 | Pending |
+| FND-01 | Phase 1 | Complete |
+| FND-02 | Phase 1 | Complete |
+| FND-03 | Phase 1 | Complete |
+| FND-04 | Phase 1 | Complete |
+| FND-05 | Phase 1 | Complete |
 | FND-06 | Phase 2 | Pending |
 | FND-07 | Phase 2 | Pending |
 | FND-08 | Phase 4 | Pending |
@@ -302,12 +302,12 @@ Deferred. Tracked but not in the current roadmap.
 | SEC-04 | Phase 3 | Pending |
 | SEC-05 | Phase 4 | Pending |
 | SEC-06 | Phase 4 | Pending |
-| SEC-07 | Phase 1 | Pending |
+| SEC-07 | Phase 1 | Complete |
 | SEC-08 | Phase 6 | Pending |
-| OPS-01 | Phase 1 | Pending |
+| OPS-01 | Phase 1 | Complete |
 | OPS-02 | Phase 2 | Pending |
 | OPS-03 | Phase 3 | Pending |
-| OPS-04 | Phase 1 | Pending |
+| OPS-04 | Phase 1 | Complete |
 | OPS-05 | Phase 5 | Pending |
 | OPS-06 | Phase 6 | Pending |
 | OPS-07 | Phase 6 | Pending |

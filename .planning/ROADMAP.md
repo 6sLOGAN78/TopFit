@@ -38,7 +38,7 @@ SPEC.md §17 used phases 0–10. This roadmap compresses them into 6 coarse phas
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundations & Walking-Skeleton Deploy** - Pinned monorepo, CI, and a live API + pgvector on the production custom domain from day 1
+- [x] **Phase 1: Foundations & Walking-Skeleton Deploy** - Pinned monorepo, CI, and a live API + pgvector on the production custom domain from day 1 (completed 2026-11-21)
 - [ ] **Phase 2: Live Jobs Index** - Source spike, then scheduled, idempotent, normalised, embedded Remotive + Adzuna ingestion, plus the LLM gateway and tasks queue
 - [ ] **Phase 3: Hybrid Search & Eval Baseline** - Correct lexical + vector + RRF retrieval with hard filters, guest search UI with chips, and a frozen-snapshot eval with a CI gate
 - [ ] **Phase 4: Profiles, Ranking & Personalised Feed** - Resume → editable profile, services/ + pure rank(), cached LLM rerank with degraded mode, fit labels, save/skip, ablation, guest-session security
@@ -61,7 +61,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Every pull request shows passing ruff, pyright, pytest (testcontainers on the same pgvector image) and Docker build checks in GitHub Actions.
   5. API logs are JSON with request IDs. A test proves resume text, message content and email fields never appear in logs, and `.env.example` documents every secret.
 
-**Plans:** 6/7 plans executed
+**Plans:** 7/7 plans complete
 
 Plans:
 **Wave 1**
@@ -84,7 +84,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 01-07-PLAN.md — Batched owner checkpoint (Student Pack, VM, DNS, repo, secrets), first deploy, memory/cold-start ADR, browser check (wave 5)
+- [x] 01-07-PLAN.md — Batched owner checkpoint (Student Pack, VM, DNS, repo, secrets), first deploy, memory/cold-start ADR, browser check (wave 5)
 
 **Research**: Not needed (standard patterns). Confirm the VPS plan's RAM before provisioning.
 

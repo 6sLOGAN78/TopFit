@@ -14,7 +14,7 @@ The full design is in `SPEC.md` at the repo root. That file is the source of tru
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ **Foundations & live skeleton** (FND-01..05, OPS-01, OPS-04, SEC-07) — Phase 1: pinned monorepo, CI on every PR, JSON logs with request IDs and PII redaction, live at https://topfit.duckdns.org with pgvector 0.8.7 and the baked 384-d model
 
 ### Active
 
@@ -76,9 +76,10 @@ Detailed, ID-tagged requirements live in `.planning/REQUIREMENTS.md` (sourced fr
 | Weighted-sum ranker with tuned weights (learned ranker in v2) | Explainable, works with zero interaction data, easy to ablate | — Pending |
 | Structured preferences + free-text memories | Ranking needs deterministic fields; conversation needs nuance | — Pending |
 | SSE (not WebSockets) for chat | One-way streaming is enough; simpler infra | — Pending |
-| Monorepo (`backend/`, `web/`, `evals/`, `config/`) | API and UI change together in one PR | — Pending |
+| Monorepo (`backend/`, `web/`, `evals/`, `config/`) | API and UI change together in one PR | ✓ Good (Phase 1) |
+| Hosting: one Azure for Students VM (Central India, B2ls_v2 4 GB) running Caddy + web + api + worker + Postgres via Compose; single origin, no Vercel; DuckDNS `topfit.duckdns.org` for now | No card needed, Indian region, ~1.1 GB used of 4 GB (ADR 0000) | ✓ Good (Phase 1); move to a registrable domain before Phase 5 launch (DuckDNS blocked on some ISPs) |
 | Ship MVP cut line first, then full v1 | Application window is short; a live product beats a perfect plan | — Pending |
-| Open: hosting combo, citext vs lower(email), rate-limit store, company industry/stage data, local cross-encoder, domain | Decided in the phase that needs them (SPEC.md §21) | — Pending |
+| Open: citext vs lower(email), rate-limit store, company industry/stage data, local cross-encoder, domain | Decided in the phase that needs them (SPEC.md §21) | — Pending |
 
 ## Evolution
 
