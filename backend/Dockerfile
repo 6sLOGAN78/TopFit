@@ -23,11 +23,13 @@ COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /opt/models /opt/models
 WORKDIR /app
 COPY ranker ./ranker
+COPY config ./config
 COPY migrations ./migrations
 COPY alembic.ini ./alembic.ini
 ENV PATH=/opt/venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
+    CONFIG_DIR=/app/config \
     FASTEMBED_CACHE_PATH=/opt/models \
     HF_HUB_OFFLINE=1 \
     HF_HUB_DISABLE_TELEMETRY=1 \

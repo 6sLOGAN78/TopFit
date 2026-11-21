@@ -8,6 +8,7 @@ from ranker.settings import Settings
 ENV_EXAMPLE = Path(__file__).resolve().parents[2] / ".env.example"
 VAR_RE = re.compile(r"^#?\s*([A-Z][A-Z0-9_]+)=", re.MULTILINE)
 EXTRA = [
+    "CONFIG_DIR",
     "POSTGRES_PASSWORD",
     "PUBLIC_HOSTNAME",
     "ACME_EMAIL",

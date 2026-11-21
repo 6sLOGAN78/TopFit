@@ -1,5 +1,5 @@
 import os
-from collections.abc import Callable, Iterator
+from collections.abc import AsyncIterator, Callable, Iterator
 from pathlib import Path
 
 # Must be set before any `ranker` import reads settings.
@@ -7,11 +7,14 @@ os.environ.setdefault("SESSION_SECRET", "test-secret-" + "x" * 52)
 os.environ.setdefault("EMBEDDER", "fake")
 os.environ.setdefault("APP_ENV", "test")
 os.environ.setdefault("COOKIE_SECURE", "true")
+os.environ.setdefault("LLM_PROVIDER", "fake")
 
 import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from testcontainers.community.postgres import PostgresContainer
 
 from ranker.main import create_app
@@ -66,3 +69,27 @@ def make_client(
     for c in opened:
         c.__exit__(None, None, None)
     get_settings.cache_clear()
+
+
+@pytest.fixture
+async def engine(database_url: str) -> AsyncIterator[AsyncEngine]:
+    eng = create_async_engine(database_url, pool_size=5)
+    try:
+        yield eng
+    finally:
+        await eng.dispose()
+
+
+@pytest.fixture
+async def clean_db(engine: AsyncEngine) -> None:
+    """Truncate every public table except alembic_version (no per-table edits needed)."""
+    async with engine.begin() as conn:
+        rows = await conn.execute(
+            text(
+                "SELECT quote_ident(tablename) FROM pg_tables "
+                "WHERE schemaname = 'public' AND tablename <> 'alembic_version'"
+            )
+        )
+        names = [r[0] for r in rows]
+        if names:
+            await conn.execute(text("TRUNCATE " + ", ".join(names) + " RESTART IDENTITY CASCADE"))
