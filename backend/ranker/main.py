@@ -6,11 +6,13 @@ from functools import partial
 
 import anyio.to_thread
 import structlog
+from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
 
 from ranker.api import api_router
 from ranker.db import create_engine_from_settings
 from ranker.embeddings import Embedder, build_embedder
+from ranker.observability import RequestLogMiddleware, configure_logging
 from ranker.settings import get_settings
 
 log = structlog.get_logger("ranker.main")
@@ -19,6 +21,7 @@ log = structlog.get_logger("ranker.main")
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     settings = get_settings()
+    configure_logging(settings.log_level)
     app.state.settings = settings
     app.state.engine = create_engine_from_settings(settings)
     embedder: Embedder | None
@@ -42,6 +45,8 @@ def create_app() -> FastAPI:
         openapi_url="/api/openapi.json",
     )
     app.include_router(api_router, prefix="/api")
+    app.add_middleware(RequestLogMiddleware)
+    app.add_middleware(CorrelationIdMiddleware)  # last = outermost, request id set first
     return app
 
 
