@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 1 context gathered
-last_updated: "2026-11-21T16:17:32.598Z"
-last_activity: 2026-11-21 -- Phase 1 planning complete
+last_updated: "2026-11-21T16:38:53.459Z"
+last_activity: 2026-11-21 -- Phase 01 execution started
 progress:
   total_phases: 6
   completed_phases: 0
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-21)
 
 **Core value:** A user describes what they want (by resume or conversation) and gets a short list of real, currently open jobs ranked well for them, with honest reasons. Hybrid search and ranking over a fresh index must still work when the LLM is unavailable.
-**Current focus:** Phase 1: Foundations & Walking-Skeleton Deploy
+**Current focus:** Phase 01 — foundations-walking-skeleton-deploy
 
 ## Current Position
 
-Phase: 1 of 6 (Foundations & Walking-Skeleton Deploy)
-Plan: 0 of TBD in current phase
-Status: Ready to execute
-Last activity: 2026-11-21 -- Phase 1 planning complete
+Phase: 01 (foundations-walking-skeleton-deploy) — EXECUTING
+Plan: 1 of 7
+Status: Executing Phase 01
+Last activity: 2026-11-21 -- Phase 01 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
