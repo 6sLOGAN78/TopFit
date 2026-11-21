@@ -1,6 +1,6 @@
 # Ranker
 
-<!-- LIVE_URL -->
+**Live:** https://topfit.duckdns.org
 
 Describe what you want (by resume or conversation) and get a short list of real, currently open jobs ranked well for you, with honest reasons. Hybrid search and ranking over a fresh index keep working even when the LLM is unavailable.
 
@@ -44,7 +44,7 @@ make test lint typecheck web-check selfcheck
 
 ## Deploy
 
-See `deploy/` (bootstrap, deploy and smoke scripts). Manual fallback: `make deploy DEPLOY_HOST=<host>`. Details are filled in later in Phase 1.
+Every push to `main` deploys automatically: CI builds and tests, pushes images to GHCR, then SSHes to the server to run migrations, start the stack and smoke-test `https://<host>/api/readyz`. Manual fallback: `make deploy DEPLOY_HOST=<ip> PUBLIC_HOSTNAME=<host>`. First-time server setup on any Ubuntu 24.04 VM: `deploy/bootstrap.sh`. Hosting choice, memory and cold-start numbers: [docs/decisions/0000-hosting-and-memory.md](docs/decisions/0000-hosting-and-memory.md).
 
 ## Environment variables
 
