@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Awaitable, Callable
+from typing import Any
 
 import pytest
 from sqlalchemy import text
@@ -12,7 +13,7 @@ from ranker.tasks.queue import Task, TaskDeferred
 pytestmark = pytest.mark.usefixtures("clean_db")
 
 
-async def _row(engine: AsyncEngine, task_id: int) -> dict[str, object]:
+async def _row(engine: AsyncEngine, task_id: int) -> dict[str, Any]:
     async with engine.connect() as conn:
         r = await conn.execute(
             text(
