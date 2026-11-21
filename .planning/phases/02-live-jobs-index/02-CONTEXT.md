@@ -42,6 +42,15 @@ Out of scope here: search endpoints and ranking (Phase 3+), HN ingestion (ING-03
 - **D-12: FX = fixed rates in config.** `config/fx.yaml` holds rates per currency to INR and an `as_of` date, updated by hand. Conversion is deterministic and testable, with no outside FX dependency. Store the rate date used, or make it derivable, so the UI can later say "converted at ₹X/$ as of <date>".
 - **D-13: Adzuna predicted salaries are stored and shown as estimates.** They carry the flag `salary_is_estimate = true`. Later phases show them as "~₹X LPA (estimate)" and use them in salary filters only if the user allows estimates. Phase 2 stores the flag correctly.
 
+### Source mix addendum (owner, 2026-11-22, during 02-01 checkpoint)
+- **D-14: Use every source we can reach without logins or anti-bot bypass.** Owner overrode the "official APIs only" default for this non-commercial portfolio project. Sources, all measured by the ING-00 spike:
+  - **Adzuna**: account is on "Pending activation: 25 test calls"; paid plans need a card. Use the test calls for the spike; keep the adapter (02-10) but budget from what the dashboard allows. No card is added by the executor.
+  - **Greenhouse, Lever, Ashby** public board APIs (many company boards, India-heavy seed list). ING-13 is pulled in regardless of the volume math (D-01 overridden by D-14).
+  - **Remotive**, **HN Who is hiring** (Algolia API), and free remote-job APIs: **Arbeitnow, Himalayas, Jobicy, RemoteOK** (attribution where required).
+  - **Internshala** category listing pages (`/jobs/<category>-jobs`, `/internships/<category>-internship`, no query strings). robots.txt allows these and disallows search/detail pages, so only listing-card fields are used (title, company, location, salary, skills, posted age) and each card links out to the Internshala detail URL. 50 cards per page, verified 2026-11-22 with a plain request.
+- **D-15: Scraper rules.** Honest User-Agent naming the project and site, obey robots.txt (checked at runtime), ≤ 1 request / 3 s per host, no login, no CAPTCHA or anti-bot bypass, no proxies or UA rotation, store only listing fields plus the source URL, attribute the source on every card, and keep `purge-source` working for each. Naukri, Indeed, LinkedIn and Wellfound get one plain probe in the spike; if blocked (or robots.txt disallows), record "blocked, not used" and move on.
+- **D-16:** Adapters for Ashby, the remote-job APIs and Internshala go in a new plan after 02-14 (same SourceAdapter contract from 02-07).
+
 ### Claude's Discretion
 - Exact schedule times (Remotive ≤ 4×/day per ING-01; Adzuna daily within the measured quota, with times in IST). Stagger sources so they don't overlap.
 - How the admin ingest endpoint (ING-11) is protected before accounts exist (Phase 5). Expected: a static admin token from env via a header, constant-time compare, and disabled when unset.
