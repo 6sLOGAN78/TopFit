@@ -1,0 +1,60 @@
+# Local base stack. Use via `make dev` (adds compose.dev.yaml overrides).
+# All credentials below are DEV-ONLY, non-secret values. Production secrets
+# live in /srv/ranker/.env on the server (see deploy/).
+name: ranker
+
+services:
+  db:
+    image: pgvector/pgvector:0.8.7-pg18-trixie
+    environment:
+      POSTGRES_USER: ranker
+      POSTGRES_PASSWORD: ranker
+      POSTGRES_DB: ranker
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ranker -d ranker"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: ./backend
+    image: ranker-api:dev
+    init: true
+    environment: &api-env
+      APP_ENV: development
+      DATABASE_URL: postgresql+psycopg://ranker:ranker@db:5432/ranker
+      SESSION_SECRET: dev-only-not-secret-change-in-prod
+      COOKIE_SECURE: "false" # Secure cookies are inconsistent on http://localhost
+      EMBEDDER: fastembed
+      EMBED_THREADS: "2"
+      LOG_LEVEL: INFO
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
+
+  worker:
+    image: ranker-api:dev
+    command: ["python", "-m", "ranker.worker"]
+    init: true
+    environment: *api-env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./web
+    image: ranker-web:dev
+    init: true
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

@@ -109,7 +109,7 @@ Ingestion (Adzuna + Remotive) ──> Normalisation (location, remote_eligibilit
         │                                   ├──> Hard filters + filter chips* + "set aside" counts*
         │                                   └──> Job card essentials (salary display, freshness*)
         └──> Dedupe ──> Per-company cap
-                         
+
 Embeddings ──> Hybrid retrieval ──> Feature ranking ──> LLM rerank ──> Reasons / missing skills / concerns
                                          │                   └──> Fit label* (from relevance)
                                          └──> Feature contributions ──> "Why ranked here" panel / match breakdown
