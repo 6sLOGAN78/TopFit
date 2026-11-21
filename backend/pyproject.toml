@@ -1,0 +1,68 @@
+[project]
+name = "ranker"
+version = "0.1.0"
+description = "Ranker backend: API, worker and ranking pipeline"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "fastapi>=0.165,<0.166",
+    "uvicorn[standard]>=0.54,<0.55",
+    "pydantic>=2.14,<3",
+    "pydantic-settings>=2.16,<3",
+    "sqlalchemy[asyncio]>=2.1.9,<2.2",
+    "psycopg[binary,pool]>=3.3.9,<3.4",
+    "alembic>=1.20,<1.21",
+    "fastembed>=0.9.1,<0.10",
+    "structlog>=26.1,<27",
+    "asgi-correlation-id>=5.0.1,<6",
+    "itsdangerous>=2.2,<3",
+    "anyio>=4",
+    "apscheduler>=3.11,<4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2,<10",
+    "pytest-asyncio>=1.5,<2",
+    "testcontainers[postgres]>=4.15,<5",
+    "httpx>=0.28,<0.29",
+    "ruff==0.17.6",
+    "pyright==1.1.414",
+    "pre-commit>=4.3",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.18,<0.10"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "ranker"
+module-root = ""
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S", "ASYNC", "RUF", "A"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "S603"]
+
+[tool.pyright]
+include = ["ranker", "tests"]
+strict = ["ranker"]
+pythonVersion = "3.14"
+venvPath = "."
+venv = ".venv"
+reportMissingTypeStubs = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+testpaths = ["tests"]
+filterwarnings = [
+    "error",
+    # starlette.testclient (starlette 1.x) warns that httpx is deprecated in favour of httpx2.
+    # Plan pins httpx 0.28; revisit when the whole toolchain moves to httpx2.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:starlette.exceptions.StarletteDeprecationWarning",
+]
