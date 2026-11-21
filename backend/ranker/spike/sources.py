@@ -129,7 +129,7 @@ def _err(exc: BaseException) -> str:
 
 
 def _quiet_http_loggers() -> None:
-    for name in ("httpx", "httpcore"):
+    for name in ("httpx", "httpx2", "httpcore"):
         logging.getLogger(name).setLevel(logging.WARNING)
 
 

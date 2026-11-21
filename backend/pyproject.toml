@@ -17,6 +17,12 @@ dependencies = [
     "itsdangerous>=2.2,<3",
     "anyio>=4",
     "apscheduler>=3.11,<4",
+    "anthropic>=2.12,<3",
+    "nh3>=0.3.8,<0.4",
+    "tenacity>=9.2,<10",
+    "typer>=0.29,<0.30",
+    "httpx>=0.28,<0.29",
+    "pyyaml>=6.0,<7",
 ]
 
 [dependency-groups]
@@ -24,11 +30,16 @@ dev = [
     "pytest>=9.2,<10",
     "pytest-asyncio>=1.5,<2",
     "testcontainers[postgres]>=4.15,<5",
-    "httpx>=0.28,<0.29",
     "ruff==0.17.6",
     "pyright==1.1.414",
     "pre-commit>=4.3",
+    "respx>=0.23,<0.24",
+    "time-machine>=3.6,<4",
+    "hypothesis>=6.170,<7",
 ]
+
+[project.scripts]
+ranker = "ranker.cli:app"
 
 [build-system]
 requires = ["uv_build>=0.9.18,<0.10"]
@@ -57,6 +68,8 @@ venv = ".venv"
 reportMissingTypeStubs = false
 
 [tool.pytest.ini_options]
+markers = ["llm: real LLM calls (opt-in)"]
+addopts = "-m 'not llm'"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 testpaths = ["tests"]

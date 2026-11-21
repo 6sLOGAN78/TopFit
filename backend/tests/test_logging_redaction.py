@@ -88,7 +88,8 @@ def test_exception_locals_not_logged() -> None:
 
 def test_request_log_line_has_no_secrets(client: Any) -> None:
     buf = _configure()
-    logging.getLogger("httpx").setLevel(logging.WARNING)  # test client's own URL log
+    for name in ("httpx", "httpx2"):  # test client's own URL log (anthropic pulls in httpx2)
+        logging.getLogger(name).setLevel(logging.WARNING)
     resp = client.get(
         "/api/healthz?q=QUERY_SECRET_C",
         headers={"Authorization": "Bearer TOKEN_SECRET_A", "Cookie": "rk_ping=COOKIE_SECRET_B"},
