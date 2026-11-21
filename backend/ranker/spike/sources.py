@@ -10,7 +10,6 @@ The in-scope heuristic here is a spike estimate only; production scope rules liv
 import argparse
 import asyncio
 import json
-import logging
 import os
 import re
 import statistics
@@ -19,41 +18,39 @@ from collections import Counter
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import httpx
 from pydantic import BaseModel, Field
 
 from ranker.observability import configure_logging
+from ranker.spike.common import (
+    BOT_UA,
+    INDIA_RE,
+    SLUG_RE,
+    as_dict,
+    as_list,
+    exc_tag,
+    in_scope,
+    quiet_http_loggers,
+)
+from ranker.spike.extra import ExtraReport, run_extra
 
 REMOTIVE_URL = "https://remotive.com/api/remote-jobs"
 ADZUNA_BASE = "https://api.adzuna.com/v1/api/jobs/in"
+ASHBY_URL = "https://api.ashbyhq.com/posting-api/job-board/{slug}"
 GREENHOUSE_URL = "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs"
 LEVER_URL = "https://api.lever.co/v0/postings/{slug}?mode=json"
 LEVER_EU_URL = "https://api.eu.lever.co/v0/postings/{slug}?mode=json"
-USER_AGENT = "TopFit-jobs-indexer/1.0"
-SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,62}$")
 DEFAULT_OUT = "../docs/decisions/0001-sources-spike.json"
-
-TECH_RE = re.compile(
-    r"engineer|developer|sde|devops|sre|data|\bml\b|machine learning|\bqa\b|sdet|security"
-    r"|android|ios|backend|frontend|full[ -]?stack",
-    re.I,
-)
-NON_TECH_RE = re.compile(r"product manager|designer|sales|recruiter|support|marketing", re.I)
-INDIA_RE = re.compile(
-    r"india|bengaluru|bangalore|mumbai|delhi|gurgaon|gurugram|noida|hyderabad|pune|chennai"
-    r"|kolkata|remote|worldwide|anywhere|apac",
-    re.I,
-)
 
 
 class BoardSeed(BaseModel):
-    ats: Literal["greenhouse", "lever"]
+    ats: Literal["greenhouse", "lever", "ashby"]
     slug: str
 
 
-def _seeds(ats: Literal["greenhouse", "lever"], slugs: str) -> list[BoardSeed]:
+def _seeds(ats: Literal["greenhouse", "lever", "ashby"], slugs: str) -> list[BoardSeed]:
     return [BoardSeed(ats=ats, slug=s) for s in slugs.split()]
 
 
@@ -65,6 +62,13 @@ SEED_BOARDS: list[BoardSeed] = [
         " postman unacademy rapido zepto urbancompany",
     ),
     *_seeds("greenhouse", "gitlab automattic canonical toptal deel remotecom hashicorp"),
+    *_seeds(
+        "greenhouse",
+        "coindcx lenskart cleartax whatfix chargebee druva uniphore sprinklr clevertap mindtickle"
+        " cashfree juspay turing databricks stripe cloudflare elastic mongodb datadog airbnb figma",
+    ),
+    *_seeds("lever", "gojek mindtickle"),
+    *_seeds("ashby", "ramp notion openai linear supabase posthog retool replit sarvam"),
 ]
 
 
@@ -120,31 +124,7 @@ class SpikeReport(BaseModel):
     remotive: RemotiveSection = Field(default_factory=RemotiveSection)
     adzuna: AdzunaSection = Field(default_factory=AdzunaSection)
     boards: list[BoardResult] = Field(default_factory=list[BoardResult])
-
-
-def _err(exc: BaseException) -> str:
-    resp = getattr(exc, "response", None)
-    status = getattr(resp, "status_code", None)
-    return f"{type(exc).__name__}:{status}"
-
-
-def _quiet_http_loggers() -> None:
-    for name in ("httpx", "httpx2", "httpcore"):
-        logging.getLogger(name).setLevel(logging.WARNING)
-
-
-def _in_scope(title: str) -> bool:
-    return bool(TECH_RE.search(title)) and not NON_TECH_RE.search(title)
-
-
-def _as_list(value: Any) -> list[dict[str, Any]]:
-    if not isinstance(value, list):
-        return []
-    return [cast("dict[str, Any]", x) for x in cast("list[Any]", value) if isinstance(x, dict)]
-
-
-def _as_dict(value: Any) -> dict[str, Any]:
-    return cast("dict[str, Any]", value) if isinstance(value, dict) else {}
+    extra: ExtraReport | None = None
 
 
 # --- Remotive ---------------------------------------------------------------------------
@@ -157,12 +137,12 @@ async def _measure_remotive(client: httpx.AsyncClient) -> RemotiveSection:
         if resp.status_code != 200:
             section.error = f"HTTPStatusError:{resp.status_code}"
             return section
-        jobs = _as_list(_as_dict(resp.json()).get("jobs"))
+        jobs = as_list(as_dict(resp.json()).get("jobs"))
     except Exception as exc:
-        section.error = _err(exc)
+        section.error = exc_tag(exc)
         return section
     section.total = len(jobs)
-    section.in_scope_estimate = sum(1 for j in jobs if _in_scope(str(j.get("title", ""))))
+    section.in_scope_estimate = sum(1 for j in jobs if in_scope(str(j.get("title", ""))))
     hist = Counter(str(j.get("candidate_required_location", "")) or "(empty)" for j in jobs)
     section.candidate_required_location = dict(hist)
     return section
@@ -195,15 +175,15 @@ class _Adzuna:
             if resp.status_code != 200:
                 probe.error = f"HTTPStatusError:{resp.status_code}"
                 return probe
-            body = _as_dict(resp.json())
-            results = _as_list(body.get("results"))
+            body = as_dict(resp.json())
+            results = as_list(body.get("results"))
             count = body.get("count")
             probe.count = count if isinstance(count, int) else None
             probe.returned = len(results)
             if results and path == "search/1":
                 self.sample_jobs.extend(results)
         except Exception as exc:
-            probe.error = _err(exc)
+            probe.error = exc_tag(exc)
         return probe
 
     async def categories(self) -> tuple[str | None, list[str]]:
@@ -212,7 +192,7 @@ class _Adzuna:
             resp = await self.client.get(f"{ADZUNA_BASE}/categories", params=self.creds)
             if resp.status_code != 200:
                 return None, []
-            results = _as_list(_as_dict(resp.json()).get("results"))
+            results = as_list(as_dict(resp.json()).get("results"))
         except Exception:
             return None, []
         tags = [str(r.get("tag", "")) for r in results]
@@ -285,11 +265,14 @@ def _board_scope(ats: str, jobs: list[dict[str, Any]]) -> int:
     for j in jobs:
         if ats == "greenhouse":
             title = str(j.get("title", ""))
-            loc = str(_as_dict(j.get("location")).get("name", ""))
+            loc = str(as_dict(j.get("location")).get("name", ""))
+        elif ats == "ashby":
+            title = str(j.get("title", ""))
+            loc = str(j.get("location", "")) + (" remote" if j.get("isRemote") else "")
         else:
             title = str(j.get("text", ""))
-            loc = str(_as_dict(j.get("categories")).get("location", ""))
-        if _in_scope(title) and INDIA_RE.search(loc):
+            loc = str(as_dict(j.get("categories")).get("location", ""))
+        if in_scope(title) and INDIA_RE.search(loc):
             n += 1
     return n
 
@@ -298,7 +281,7 @@ async def _fetch_board(client: httpx.AsyncClient, url: str) -> tuple[int | None,
     try:
         resp = await client.get(url)
     except Exception as exc:
-        return None, None, _err(exc)
+        return None, None, exc_tag(exc)
     if resp.status_code != 200:
         return resp.status_code, None, None
     try:
@@ -313,13 +296,16 @@ async def _measure_board(client: httpx.AsyncClient, seed: BoardSeed) -> BoardRes
         return result
     if seed.ats == "greenhouse":
         status, body, err = await _fetch_board(client, GREENHOUSE_URL.format(slug=seed.slug))
-        jobs = _as_list(_as_dict(body).get("jobs"))
+        jobs = as_list(as_dict(body).get("jobs"))
+    elif seed.ats == "ashby":
+        status, body, err = await _fetch_board(client, ASHBY_URL.format(slug=seed.slug))
+        jobs = as_list(as_dict(body).get("jobs"))
     else:
         status, body, err = await _fetch_board(client, LEVER_URL.format(slug=seed.slug))
         if status == 404:
             status, body, err = await _fetch_board(client, LEVER_EU_URL.format(slug=seed.slug))
             result.host = "eu"
-        jobs = _as_list(body)
+        jobs = as_list(body)
     result.status = err or str(status)
     if status == 200 and err is None:
         result.total = len(jobs)
@@ -334,8 +320,10 @@ async def run_spike(
     adzuna_app_key: str | None,
     seeds: list[BoardSeed],
     delay_s: float,
+    include_extra: bool = False,
+    min_interval_s: float = 3.0,
 ) -> SpikeReport:
-    _quiet_http_loggers()
+    quiet_http_loggers()
     report = SpikeReport(measured_at=datetime.now(UTC).isoformat(timespec="seconds"))
     report.remotive = await _measure_remotive(client)
     if adzuna_app_id and adzuna_app_key:
@@ -346,6 +334,8 @@ async def run_spike(
         report.boards.append(await _measure_board(client, seed))
         if delay_s > 0:
             await asyncio.sleep(delay_s)
+    if include_extra:
+        report.extra = await run_extra(client, delay_s=delay_s, min_interval_s=min_interval_s)
     return report
 
 
@@ -353,13 +343,15 @@ async def run_spike(
 
 
 async def _amain() -> SpikeReport:
-    async with httpx.AsyncClient(timeout=20, headers={"User-Agent": USER_AGENT}) as client:
+    async with httpx.AsyncClient(timeout=20, headers={"User-Agent": BOT_UA}) as client:
         report = await run_spike(
             client,
             adzuna_app_id=os.environ.get("ADZUNA_APP_ID") or None,
             adzuna_app_key=os.environ.get("ADZUNA_APP_KEY") or None,
             seeds=SEED_BOARDS,
             delay_s=1.0,
+            include_extra=True,
+            min_interval_s=3.0,
         )
     return report
 
@@ -373,6 +365,9 @@ def _emit(report: SpikeReport, out: Path) -> int:
                 "remotive_total": report.remotive.total,
                 "adzuna_skipped": report.adzuna.skipped,
                 "adzuna_calls": report.adzuna.calls_used,
+                "free_apis": {
+                    a.name: a.total for a in (report.extra.free_apis if report.extra else [])
+                },
                 "boards_ok": sum(1 for b in report.boards if b.status == "200"),
                 "out": str(out),
             }
@@ -383,7 +378,7 @@ def _emit(report: SpikeReport, out: Path) -> int:
 
 def main() -> int:
     configure_logging()
-    _quiet_http_loggers()
+    quiet_http_loggers()
     parser = argparse.ArgumentParser(description="ING-00 source spike")
     parser.add_argument("--out", default=DEFAULT_OUT)
     args = parser.parse_args()
