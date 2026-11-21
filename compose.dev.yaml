@@ -1,0 +1,32 @@
+# Dev overrides: bind mounts, hot reload, loopback-only ports. No Caddy locally.
+services:
+  db:
+    ports: ["127.0.0.1:5432:5432"]
+
+  api:
+    # The venv lives at /opt/venv, so this mount cannot hide it.
+    volumes: ["./backend:/app"]
+    ports: ["127.0.0.1:8000:8000"]
+    command:
+      [
+        "sh",
+        "-c",
+        "alembic upgrade head && uvicorn ranker.main:app --host 0.0.0.0 --port 8000 --reload --no-access-log",
+      ]
+
+  worker:
+    volumes: ["./backend:/app"]
+
+  web:
+    build:
+      context: ./web
+      target: deps
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+      - /app/.next
+    command: ["npm", "run", "dev", "--", "--hostname", "0.0.0.0", "--port", "3000"]
+    environment:
+      API_PROXY_TARGET: "http://api:8000"
+      WATCHPACK_POLLING: "true"
+    ports: ["127.0.0.1:3000:3000"]
