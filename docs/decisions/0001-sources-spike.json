@@ -1,0 +1,873 @@
+{
+  "measured_at": "2026-11-21T22:28:13+00:00",
+  "remotive": {
+    "total": 16,
+    "in_scope_estimate": 6,
+    "candidate_required_location": {
+      "USA": 4,
+      "USA, Canada, USA timezones": 1,
+      "USA, Canada": 1,
+      "Worldwide": 7,
+      "LATAM, Europe, USA, Canada, APAC": 2,
+      "Europe, USA, Canada, Australia, Singapore, Mexico, Saudi Arabia": 1
+    },
+    "error": null
+  },
+  "adzuna": {
+    "skipped": null,
+    "it_category_tag": "it-jobs",
+    "categories": [
+      "accounting-finance-jobs",
+      "it-jobs",
+      "sales-jobs",
+      "customer-services-jobs",
+      "engineering-jobs",
+      "hr-jobs",
+      "healthcare-nursing-jobs",
+      "hospitality-catering-jobs",
+      "pr-advertising-marketing-jobs",
+      "logistics-warehouse-jobs",
+      "teaching-jobs",
+      "trade-construction-jobs",
+      "admin-jobs",
+      "legal-jobs",
+      "creative-design-jobs",
+      "graduate-jobs",
+      "retail-jobs",
+      "consultancy-jobs",
+      "manufacturing-jobs",
+      "scientific-qa-jobs",
+      "social-work-jobs",
+      "travel-jobs",
+      "energy-oil-gas-jobs",
+      "property-jobs",
+      "charity-voluntary-jobs",
+      "domestic-help-cleaning-jobs",
+      "maintenance-jobs",
+      "part-time-jobs",
+      "other-general-jobs",
+      "unknown"
+    ],
+    "category_counts_by_days": {
+      "1": {
+        "count": 4019,
+        "returned": 50,
+        "status": 200,
+        "error": null
+      },
+      "7": {
+        "count": 12295,
+        "returned": 50,
+        "status": 200,
+        "error": null
+      },
+      "30": {
+        "count": 35034,
+        "returned": 50,
+        "status": 200,
+        "error": null
+      }
+    },
+    "what_or_count": {
+      "count": 7641,
+      "returned": 50,
+      "status": 200,
+      "error": null
+    },
+    "bangalore": {
+      "count": 24486,
+      "returned": 50,
+      "status": 200,
+      "error": null
+    },
+    "bengaluru": {
+      "count": 24486,
+      "returned": 50,
+      "status": 200,
+      "error": null
+    },
+    "results_per_page_100": {
+      "count": 102143,
+      "returned": 50,
+      "status": 200,
+      "error": null
+    },
+    "deep_page_40": {
+      "count": 102143,
+      "returned": 50,
+      "status": 200,
+      "error": null
+    },
+    "rate_limit_headers": {},
+    "sample": {
+      "n": 350,
+      "share_salary_is_predicted": 0.0,
+      "share_full_description": 0.0,
+      "median_description_length": 500.0,
+      "share_contract_time": 0.9657,
+      "share_salary_max_under_200000": 0.0229
+    },
+    "calls_used": 9
+  },
+  "boards": [
+    {
+      "ats": "lever",
+      "slug": "cred",
+      "status": "200",
+      "host": "global",
+      "total": 11,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "lever",
+      "slug": "meesho",
+      "status": "200",
+      "host": "global",
+      "total": 48,
+      "in_scope_estimate": 10
+    },
+    {
+      "ats": "lever",
+      "slug": "paytm",
+      "status": "200",
+      "host": "global",
+      "total": 199,
+      "in_scope_estimate": 5
+    },
+    {
+      "ats": "lever",
+      "slug": "zeta",
+      "status": "200",
+      "host": "global",
+      "total": 33,
+      "in_scope_estimate": 7
+    },
+    {
+      "ats": "lever",
+      "slug": "slice",
+      "status": "404",
+      "host": "eu",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "lever",
+      "slug": "jupiter",
+      "status": "404",
+      "host": "eu",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "lever",
+      "slug": "upgrad",
+      "status": "404",
+      "host": "eu",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "lever",
+      "slug": "inmobi",
+      "status": "404",
+      "host": "eu",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "groww",
+      "status": "200",
+      "host": "global",
+      "total": 9,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "zerodha",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "swiggy",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "phonepe",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "sharechat",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "dream11",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "razorpay",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "freshworks",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "browserstack",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "postman",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "unacademy",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "rapido",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "zepto",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "urbancompany",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "gitlab",
+      "status": "200",
+      "host": "global",
+      "total": 246,
+      "in_scope_estimate": 76
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "automattic",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "canonical",
+      "status": "200",
+      "host": "global",
+      "total": 318,
+      "in_scope_estimate": 77
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "toptal",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "deel",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "remotecom",
+      "status": "200",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "hashicorp",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "coindcx",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "lenskart",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "cleartax",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "whatfix",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "chargebee",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "druva",
+      "status": "200",
+      "host": "global",
+      "total": 29,
+      "in_scope_estimate": 8
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "uniphore",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "sprinklr",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "clevertap",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "mindtickle",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "cashfree",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "juspay",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "turing",
+      "status": "200",
+      "host": "global",
+      "total": 31,
+      "in_scope_estimate": 5
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "databricks",
+      "status": "200",
+      "host": "global",
+      "total": 895,
+      "in_scope_estimate": 76
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "stripe",
+      "status": "200",
+      "host": "global",
+      "total": 778,
+      "in_scope_estimate": 31
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "cloudflare",
+      "status": "200",
+      "host": "global",
+      "total": 504,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "elastic",
+      "status": "200",
+      "host": "global",
+      "total": 382,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "mongodb",
+      "status": "200",
+      "host": "global",
+      "total": 417,
+      "in_scope_estimate": 29
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "datadog",
+      "status": "200",
+      "host": "global",
+      "total": 382,
+      "in_scope_estimate": 4
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "airbnb",
+      "status": "200",
+      "host": "global",
+      "total": 202,
+      "in_scope_estimate": 20
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "figma",
+      "status": "200",
+      "host": "global",
+      "total": 147,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "lever",
+      "slug": "gojek",
+      "status": "404",
+      "host": "eu",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "lever",
+      "slug": "mindtickle",
+      "status": "200",
+      "host": "global",
+      "total": 19,
+      "in_scope_estimate": 7
+    },
+    {
+      "ats": "ashby",
+      "slug": "ramp",
+      "status": "200",
+      "host": "global",
+      "total": 187,
+      "in_scope_estimate": 44
+    },
+    {
+      "ats": "ashby",
+      "slug": "notion",
+      "status": "200",
+      "host": "global",
+      "total": 170,
+      "in_scope_estimate": 26
+    },
+    {
+      "ats": "ashby",
+      "slug": "openai",
+      "status": "200",
+      "host": "global",
+      "total": 852,
+      "in_scope_estimate": 251
+    },
+    {
+      "ats": "ashby",
+      "slug": "linear",
+      "status": "200",
+      "host": "global",
+      "total": 32,
+      "in_scope_estimate": 10
+    },
+    {
+      "ats": "ashby",
+      "slug": "supabase",
+      "status": "200",
+      "host": "global",
+      "total": 80,
+      "in_scope_estimate": 38
+    },
+    {
+      "ats": "ashby",
+      "slug": "posthog",
+      "status": "200",
+      "host": "global",
+      "total": 9,
+      "in_scope_estimate": 2
+    },
+    {
+      "ats": "ashby",
+      "slug": "retool",
+      "status": "404",
+      "host": "global",
+      "total": 0,
+      "in_scope_estimate": 0
+    },
+    {
+      "ats": "ashby",
+      "slug": "replit",
+      "status": "200",
+      "host": "global",
+      "total": 38,
+      "in_scope_estimate": 21
+    },
+    {
+      "ats": "ashby",
+      "slug": "sarvam",
+      "status": "200",
+      "host": "global",
+      "total": 42,
+      "in_scope_estimate": 22
+    }
+  ],
+  "extra": {
+    "free_apis": [
+      {
+        "name": "arbeitnow",
+        "status": "200",
+        "total": 1500,
+        "sampled": 1500,
+        "in_scope_sample": 421,
+        "india_eligible_sample": 106,
+        "in_scope_india_eligible_sample": 32,
+        "pages_fetched": 5,
+        "terms_note": "Free API, no key; attribute Arbeitnow and link back to the listing url.",
+        "error": null
+      },
+      {
+        "name": "himalayas",
+        "status": "200",
+        "total": 120098,
+        "sampled": 20,
+        "in_scope_sample": 5,
+        "india_eligible_sample": 0,
+        "in_scope_india_eligible_sample": 0,
+        "pages_fetched": 1,
+        "terms_note": "Free API (max 20 per request); must link back to Himalayas and credit it.",
+        "error": null
+      },
+      {
+        "name": "jobicy",
+        "status": "error",
+        "total": 100,
+        "sampled": 100,
+        "in_scope_sample": 31,
+        "india_eligible_sample": 1,
+        "in_scope_india_eligible_sample": 0,
+        "pages_fetched": 1,
+        "terms_note": "Free API; link back to Jobicy and credit it as the source.",
+        "error": "HTTPStatusError:400"
+      },
+      {
+        "name": "remoteok",
+        "status": "200",
+        "total": 100,
+        "sampled": 100,
+        "in_scope_sample": 26,
+        "india_eligible_sample": 19,
+        "in_scope_india_eligible_sample": 7,
+        "pages_fetched": 1,
+        "terms_note": "Free API; must link back to the RemoteOK URL and credit RemoteOK as source.",
+        "error": null
+      }
+    ],
+    "hn": {
+      "status": "200",
+      "title": "Ask HN: Who is hiring? (November 2026)",
+      "story_id": 50338728,
+      "num_comments": 381,
+      "top_level_comments": 242,
+      "mentions_india_or_remote": 142,
+      "error": null
+    },
+    "internshala": {
+      "robots": "checked",
+      "categories": [
+        {
+          "path": "/jobs/python-jobs/",
+          "status": "200",
+          "cards": 50,
+          "total_listed": 159,
+          "pages_available": 4,
+          "fields_present": {
+            "title": 50,
+            "company": 50,
+            "location": 50,
+            "salary": 50,
+            "experience": 50,
+            "skills": 50,
+            "posted_age": 50,
+            "detail_link": 50
+          }
+        },
+        {
+          "path": "/jobs/software-development-jobs/",
+          "status": "200",
+          "cards": 50,
+          "total_listed": 132,
+          "pages_available": 3,
+          "fields_present": {
+            "title": 50,
+            "company": 50,
+            "location": 50,
+            "salary": 50,
+            "experience": 50,
+            "skills": 49,
+            "posted_age": 50,
+            "detail_link": 50
+          }
+        },
+        {
+          "path": "/jobs/web-development-jobs/",
+          "status": "200",
+          "cards": 50,
+          "total_listed": 189,
+          "pages_available": 4,
+          "fields_present": {
+            "title": 50,
+            "company": 50,
+            "location": 50,
+            "salary": 50,
+            "experience": 50,
+            "skills": 49,
+            "posted_age": 50,
+            "detail_link": 50
+          }
+        },
+        {
+          "path": "/jobs/data-science-jobs/",
+          "status": "200",
+          "cards": 50,
+          "total_listed": 244,
+          "pages_available": 5,
+          "fields_present": {
+            "title": 50,
+            "company": 50,
+            "location": 50,
+            "salary": 50,
+            "experience": 49,
+            "skills": 43,
+            "posted_age": 50,
+            "detail_link": 50
+          }
+        },
+        {
+          "path": "/jobs/java-jobs/",
+          "status": "200",
+          "cards": 50,
+          "total_listed": 56,
+          "pages_available": 2,
+          "fields_present": {
+            "title": 50,
+            "company": 50,
+            "location": 50,
+            "salary": 50,
+            "experience": 33,
+            "skills": 50,
+            "posted_age": 50,
+            "detail_link": 50
+          }
+        },
+        {
+          "path": "/internships/python-internship/",
+          "status": "200",
+          "cards": 51,
+          "total_listed": null,
+          "pages_available": 6,
+          "fields_present": {
+            "title": 51,
+            "company": 51,
+            "location": 51,
+            "salary": 51,
+            "experience": 0,
+            "skills": 51,
+            "posted_age": 51,
+            "detail_link": 51
+          }
+        },
+        {
+          "path": "/internships/web-development-internship/",
+          "status": "200",
+          "cards": 52,
+          "total_listed": null,
+          "pages_available": 7,
+          "fields_present": {
+            "title": 52,
+            "company": 52,
+            "location": 52,
+            "salary": 52,
+            "experience": 0,
+            "skills": 52,
+            "posted_age": 52,
+            "detail_link": 52
+          }
+        },
+        {
+          "path": "/internships/software-development-internship/",
+          "status": "200",
+          "cards": 50,
+          "total_listed": null,
+          "pages_available": 4,
+          "fields_present": {
+            "title": 50,
+            "company": 50,
+            "location": 50,
+            "salary": 50,
+            "experience": 0,
+            "skills": 50,
+            "posted_age": 50,
+            "detail_link": 50
+          }
+        },
+        {
+          "path": "/internships/data-science-internship/",
+          "status": "200",
+          "cards": 57,
+          "total_listed": null,
+          "pages_available": 8,
+          "fields_present": {
+            "title": 57,
+            "company": 57,
+            "location": 57,
+            "salary": 57,
+            "experience": 0,
+            "skills": 57,
+            "posted_age": 57,
+            "detail_link": 57
+          }
+        },
+        {
+          "path": "/internships/machine-learning-internship/",
+          "status": "200",
+          "cards": 52,
+          "total_listed": null,
+          "pages_available": 3,
+          "fields_present": {
+            "title": 52,
+            "company": 52,
+            "location": 52,
+            "salary": 52,
+            "experience": 0,
+            "skills": 52,
+            "posted_age": 52,
+            "detail_link": 52
+          }
+        }
+      ],
+      "requests_made": 10
+    },
+    "probes": [
+      {
+        "site": "naukri",
+        "url_path": "/python-jobs",
+        "robots": "disallowed",
+        "status": null,
+        "verdict": "blocked, not used",
+        "error": null
+      },
+      {
+        "site": "indeed",
+        "url_path": "/jobs?q=python+developer",
+        "robots": "allowed",
+        "status": 200,
+        "verdict": "reachable, no adapter planned (robots allow, HTTP 200)",
+        "error": null
+      },
+      {
+        "site": "linkedin_guest",
+        "url_path": "/jobs-guest/jobs/api/seeMoreJobPosts/search?keywords=python&location=India",
+        "robots": "disallowed",
+        "status": null,
+        "verdict": "blocked, not used",
+        "error": null
+      },
+      {
+        "site": "wellfound",
+        "url_path": "/jobs",
+        "robots": "allowed",
+        "status": 200,
+        "verdict": "blocked, not used",
+        "error": null
+      }
+    ]
+  }
+}
