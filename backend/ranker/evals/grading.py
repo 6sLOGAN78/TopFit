@@ -12,6 +12,7 @@
 import asyncio
 import json
 import random
+import re
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -172,12 +173,20 @@ _JOB_SQL = text(
 ).bindparams(bindparam("ids", expanding=True))
 
 
+_UNSAFE_CTRL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
+
+
+def _safe(text: str) -> str:
+    """Drop control chars (ESC, C0 except \\n/\\t, C1) so job text can't inject terminal escapes."""
+    return _UNSAFE_CTRL.sub("", text)
+
+
 def render_job(row: Mapping[str, Any]) -> str:
     salary = ""
     if row["salary_min_inr_annual"] or row["salary_max_inr_annual"]:
         salary = f"Salary (INR/yr): {row['salary_min_inr_annual']}-{row['salary_max_inr_annual']}\n"
     desc = str(row["description_clean"])[:DESCRIPTION_CHARS]
-    return (
+    return _safe(
         f"Title: {row['title']}\nCompany: {row['company'] or 'unknown'}\n"
         f"Location: {row['location_text'] or row['city'] or 'unknown'}\n"
         f"Work mode: {row['remote_type']} (remote eligibility: {row['remote_eligibility']})\n"
@@ -202,7 +211,7 @@ def render_persona(p: Persona) -> str:
         parts.append("Filters: " + p.explicit_filters.model_dump_json(exclude_defaults=True))
     if p.notes:
         parts.append(f"Notes: {p.notes}")
-    return "\n".join(parts)
+    return _safe("\n".join(parts))
 
 
 # --- grading -----------------------------------------------------------------------------------
