@@ -137,13 +137,18 @@ async def finish_run(
     errors: Sequence[dict[str, Any]],
     notes: dict[str, Any],
     now: datetime,
+    expired: int = 0,
+    duplicates_grouped: int = 0,
+    ghost_flagged: int = 0,
+    reposts: int = 0,
 ) -> None:
     await conn.execute(
         text(
             "UPDATE ingest_runs SET status = :status, finished_at = :now, fetched = :fetched, "
             "inserted = :inserted, updated = :updated, unchanged = :unchanged, "
             "skipped = :skipped, failed = :failed, calls_used = :calls_used, "
-            "in_scope = :in_scope, errors = CAST(:errors AS jsonb), "
+            "in_scope = :in_scope, expired = :expired, duplicates_grouped = :dups, "
+            "ghost_flagged = :ghosts, reposts = :reposts, errors = CAST(:errors AS jsonb), "
             "notes = CAST(:notes AS jsonb) WHERE id = :run_id"
         ),
         {
@@ -158,6 +163,10 @@ async def finish_run(
             "failed": failed,
             "calls_used": calls_used,
             "in_scope": in_scope,
+            "expired": expired,
+            "dups": duplicates_grouped,
+            "ghosts": ghost_flagged,
+            "reposts": reposts,
             "errors": json.dumps(list(errors), default=str),
             "notes": json.dumps(notes, default=str),
         },

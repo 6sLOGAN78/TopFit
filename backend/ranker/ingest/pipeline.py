@@ -15,6 +15,14 @@ from ranker.config_loader import load_config
 from ranker.embeddings.embedder import Embedder, build_embedder
 from ranker.embeddings.service import embed_missing
 from ranker.ingest import store
+from ranker.ingest.dedupe import recompute_dedupe
+from ranker.ingest.expiry import (
+    ExpiryConfig,
+    expire_absent_after_run,
+    expire_ttl,
+    volume_guard,
+)
+from ranker.ingest.ghost import detect_reposts, refresh_ghost_signals
 from ranker.ingest.hashing import content_hash
 from ranker.ingest.normalize.job import NORMALIZER_VERSION, NormalizedJob, ScopeSkip, normalize_job
 from ranker.ingest.sources import (
@@ -59,6 +67,10 @@ class RunSummary:
     failed: int = 0
     calls_used: int = 0
     embedded: int = 0
+    expired: int = 0
+    duplicates_grouped: int = 0
+    ghost_flagged: int = 0
+    reposts: int = 0
 
 
 def _error(source_job_id: str | None, exc: BaseException) -> dict[str, Any]:
@@ -205,6 +217,64 @@ async def run_ingest(
         await _release_lock(lock_conn, source)
 
 
+async def _expire(
+    engine: AsyncEngine,
+    adapter: SourceAdapter,
+    config: BaseSourceConfig,
+    source: str,
+    run_id: int,
+    result: FetchResult,
+    summary: RunSummary,
+    notes: dict[str, Any],
+) -> int:
+    """Expire after a succeeded run, only when the volume guard allows (ING-08)."""
+    cfg = ExpiryConfig.model_validate(config.model_dump())
+    async with engine.begin() as conn:
+        total = await volume_guard(conn, source, None, summary.fetched, cfg)
+        guard: dict[str, Any] = total.as_note()
+        notes["guard"] = guard
+        if not total.allowed:
+            return 0
+        if adapter.expiry_policy == "ttl":
+            return await expire_ttl(
+                conn, source=source, cfg=cfg, now=datetime.now(UTC), run_id=run_id, healthy=True
+            )
+        allowed_scopes: list[str] = []
+        scope_notes: dict[str, Any] = {}
+        for scope in sorted(result.complete_scopes):
+            decision = await volume_guard(
+                conn, source, scope, result.scope_counts.get(scope, 0), cfg
+            )
+            scope_notes[scope] = decision.as_note()
+            if decision.allowed:
+                allowed_scopes.append(scope)
+        guard["scopes"] = scope_notes
+        return await expire_absent_after_run(
+            conn, source=source, run_id=run_id, scopes=allowed_scopes, cfg=cfg
+        )
+
+
+async def _signals(
+    engine: AsyncEngine, source: str, run_id: int, now: datetime, summary: RunSummary
+) -> None:
+    """Cross-source dedupe, repost detection and ghost signals for the touched rows."""
+    async with engine.begin() as conn:
+        keys = [
+            str(r[0])
+            for r in await conn.execute(
+                text(
+                    "SELECT DISTINCT dedupe_key FROM jobs WHERE source = :source "
+                    "AND (last_seen_run_id = :run_id OR expired_by_run_id = :run_id)"
+                ),
+                {"source": source, "run_id": run_id},
+            )
+        ]
+        stats = await recompute_dedupe(conn, keys)
+        summary.duplicates_grouped = stats.duplicates
+        summary.reposts = await detect_reposts(conn, run_id=run_id, source=source)
+        summary.ghost_flagged = await refresh_ghost_signals(conn, source=source, now=now)
+
+
 async def _run(
     engine: AsyncEngine,
     adapter: SourceAdapter,
@@ -277,6 +347,21 @@ async def _run(
     if embed_failed and summary.status == "succeeded":
         summary.status = "partial"
 
+    if summary.status == "succeeded":
+        try:
+            summary.expired = await _expire(
+                engine, adapter, _source_config(source), source, run_id, result, summary, notes
+            )
+        except Exception as exc:  # expiry problems never fail the run; nothing was expired
+            notes["guard_error"] = type(exc).__name__
+            log.warning("ingest_expiry_failed", source=source, error_type=type(exc).__name__)
+    if summary.status in ("succeeded", "partial"):
+        try:
+            await _signals(engine, source, run_id, now, summary)
+        except Exception as exc:
+            notes["signals_error"] = type(exc).__name__
+            log.warning("ingest_signals_failed", source=source, error_type=type(exc).__name__)
+
     async with engine.begin() as conn:
         await store.finish_run(
             conn,
@@ -293,6 +378,10 @@ async def _run(
             errors=errors,
             notes=notes,
             now=datetime.now(UTC),
+            expired=summary.expired,
+            duplicates_grouped=summary.duplicates_grouped,
+            ghost_flagged=summary.ghost_flagged,
+            reposts=summary.reposts,
         )
     log.info(
         "ingest_run_finished",
@@ -307,6 +396,10 @@ async def _run(
         skipped=summary.skipped,
         failed=summary.failed,
         calls_used=summary.calls_used,
+        expired=summary.expired,
+        duplicates_grouped=summary.duplicates_grouped,
+        ghost_flagged=summary.ghost_flagged,
+        reposts=summary.reposts,
     )
     return summary
 
