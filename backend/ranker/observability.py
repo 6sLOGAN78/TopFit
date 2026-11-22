@@ -36,6 +36,9 @@ REDACT_KEYS: frozenset[str] = frozenset(
         "anthropic_api_key",
         "x-admin-token",
         "admin_token",
+        "openrouter_api_key",
+        "q",
+        "query_text",
     }
 )
 MASK = "[REDACTED]"

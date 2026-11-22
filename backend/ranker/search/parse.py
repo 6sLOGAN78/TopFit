@@ -22,6 +22,7 @@ from ranker.ingest.normalize.salary import parse_salary_text
 from ranker.ingest.normalize.seniority import infer_seniority
 from ranker.ingest.skills import SkillMatcher, default_matcher
 from ranker.llm.client import LLMGateway
+from ranker.llm.schemas import SALARY_BUCKETS_LPA
 from ranker.search.models import (
     Chip,
     ChipSource,
@@ -35,7 +36,6 @@ from ranker.settings import Settings
 PURPOSE = "query_parse"
 PROMPT_VERSION = "qparse-v1"
 LOCATION_CACHE_SIZE = 4096
-SALARY_BUCKETS_LPA = (3, 4, 5, 6, 8, 10, 12, 15, 18, 20, 25, 30, 40, 50)
 
 _EDGE_PUNCT = ",;:()[]\"'!?"
 _SYMBOL_CHARS = re.compile(r"[+#.]")

@@ -1,6 +1,7 @@
 """Provider interface for the LLM gateway."""
 
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Any, Literal, Protocol, TypedDict
 
 from pydantic import BaseModel
@@ -24,6 +25,8 @@ class ParsedResult[T: BaseModel]:
     cache_write_tokens: int
     model: str
     stop_reason: str | None
+    # Provider-reported USD cost (OpenRouter ``usage.cost``); None when not reported.
+    cost_usd: Decimal | None = None
 
 
 class Provider(Protocol):
