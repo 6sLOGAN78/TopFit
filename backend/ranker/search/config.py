@@ -20,14 +20,34 @@ class Retrieval(BaseModel):
     set_aside_universe_k: int
 
 
-class RankingConfig(BaseModel):
-    """Later plans add optional sections (guest weights, diversity) with defaults."""
+class GuestWeights(BaseModel):
+    """Weights of the light guest signals added to the normalised RRF score (D-11)."""
 
+    model_config = ConfigDict(extra="forbid")
+
+    rrf: float = 1.0
+    recency: float = 0.15
+    region_certain: float = 0.10
+    salary_known: float = 0.05
+    ghost_penalty: float = 0.25
+    unknown_seniority_penalty: float = 0.05
+
+
+class Diversity(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    max_per_company_top10: int = 2
+
+
+class RankingConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     version: int
     retrieval: Retrieval
     page_size: int = 20
+    guest_weights: GuestWeights = GuestWeights()
+    recency_half_life_days: float = 14
+    diversity: Diversity = Diversity()
 
 
 def ranking_config() -> RankingConfig:
