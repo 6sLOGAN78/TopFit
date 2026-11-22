@@ -11,6 +11,10 @@ class LLMUnavailable(LLMError):
     """No key, provider down after retries, or timeout."""
 
 
+class LLMAuthError(LLMUnavailable):
+    """Provider rejected the credentials (401/403). Never retried."""
+
+
 class BudgetExceeded(LLMError):
     def __init__(self, resets_at: datetime | None = None) -> None:
         super().__init__("monthly LLM budget exceeded")
