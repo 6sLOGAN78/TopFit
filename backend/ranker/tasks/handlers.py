@@ -11,5 +11,11 @@ Handler = Callable[[Task], Awaitable[None]]
 
 
 def build_handlers(settings: Settings, engine: AsyncEngine) -> dict[str, Handler]:
-    del settings, engine
-    return {}
+    from ranker.ingest.enrich import make_backlog_handler, make_enrich_handler
+    from ranker.llm.client import build_gateway
+
+    gateway = build_gateway(engine, settings)
+    return {
+        "enrich_job": make_enrich_handler(engine, gateway),
+        "enrich_backlog": make_backlog_handler(engine),
+    }
