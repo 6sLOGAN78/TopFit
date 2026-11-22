@@ -1,0 +1,606 @@
+# Canonical skills taxonomy (NORM-06). Loaded by ranker/ingest/skills.py via load_config.
+#
+# Entry fields: canonical, category, aliases, strong_aliases, ambiguous, case_sensitive,
+# context (regexes tested within +-40 chars), implies, token (search-safe token override).
+# - Non-ambiguous entries implicitly match their canonical name (and "-" -> " ").
+# - `aliases` of an ambiguous entry only count with a context match or inside a skills list;
+#   `strong_aliases` always match (case-insensitive).
+# - `case_sensitive: true` makes `aliases` match exactly.
+provenance:
+  - >-
+    Programming-language names and common aliases follow the naming used by GitHub Linguist
+    languages.yml (MIT licence, https://github.com/github-linguist/linguist). Names were
+    consulted as a reference on 2026-11-22 and entered by hand; no file was bulk-copied.
+  - >-
+    Tool, framework and database names were cross-checked against O*NET Technology Skills and
+    Hot Technologies (CC BY 4.0, https://www.onetcenter.org/license_db.html). Attribution:
+    "This product includes information from the O*NET 30.x Database by the U.S. Department of
+    Labor, Employment and Training Administration (USDOL/ETA). Used under the CC BY 4.0
+    license." The exact O*NET release was not pinned (reference lookup only, no data import).
+  - "Hand-curated additions for the Indian tech market (Spring Boot, Flutter, PySpark, Airflow, dbt, Snowflake, Kafka, cloud services), 2026-11."
+
+skills:
+  # ---- Programming languages ----
+  - {canonical: python, category: language, aliases: ["Python3", "Python 3"]}
+  - {canonical: java, category: language, aliases: ["Java 8", "Java 11", "Java 17", "Java 21", "J2EE", "Core Java"]}
+  - {canonical: javascript, category: language, aliases: ["JavaScript", "ECMAScript", "ES6", "Vanilla JS"], strong_aliases: ["JS"]}
+  - {canonical: typescript, category: language, aliases: ["TypeScript"], strong_aliases: ["TS"]}
+  - {canonical: cpp, category: language, aliases: ["C++", "C++11", "C++14", "C++17", "C++20", "CPP"], token: cplusplus}
+  - {canonical: csharp, category: language, aliases: ["C#", "C Sharp"]}
+  - canonical: c
+    category: language
+    ambiguous: true
+    case_sensitive: true
+    aliases: ["C"]
+    strong_aliases: ["C language", "C programming"]
+  - canonical: go
+    category: language
+    ambiguous: true
+    case_sensitive: true
+    aliases: ["Go"]
+    strong_aliases: ["Golang", "Go lang", "Go programming"]
+    context: ['\bin Go\b', '\bGo (?:developer|engineer|programmer|microservices?|services?|backend|concurrency|routines?)\b', '\bwith Go\b', '\busing Go\b', '\(Go\)', '\bGo/']
+    token: golang
+  - canonical: r
+    category: language
+    ambiguous: true
+    case_sensitive: true
+    aliases: ["R"]
+    strong_aliases: ["R language", "R programming", "RStudio"]
+    context: ['\bR (?:programming|language|packages?|studio|markdown|shiny)\b', '\bin R\b', '\busing R\b']
+  - {canonical: rust, category: language, ambiguous: true, case_sensitive: true, aliases: ["Rust"], strong_aliases: ["Rustlang", "Rust lang"], context: ['(?i:cargo|tokio|systems programming|memory safe|rust developer|rust engineer|\bin rust\b|rust programming)']}
+  - {canonical: kotlin, category: language}
+  - {canonical: scala, category: language}
+  - {canonical: swift, category: language, ambiguous: true, case_sensitive: true, aliases: ["Swift"], strong_aliases: ["Swift programming"], context: ['(?i:\bios\b|xcode|apple|swiftui|uikit|cocoa|objective-c|swift developer|swift engineer)']}
+  - {canonical: objective-c, category: language, aliases: ["ObjC", "Objective C"]}
+  - {canonical: ruby, category: language}
+  - {canonical: php, category: language, aliases: ["PHP7", "PHP 8"]}
+  - {canonical: dart, category: language}
+  - {canonical: elixir, category: language}
+  - {canonical: erlang, category: language}
+  - {canonical: haskell, category: language}
+  - {canonical: clojure, category: language}
+  - {canonical: ocaml, category: language}
+  - {canonical: fsharp, category: language, aliases: ["F#"]}
+  - {canonical: perl, category: language}
+  - {canonical: lua, category: language}
+  - {canonical: groovy, category: language}
+  - {canonical: matlab, category: language}
+  - {canonical: julia, category: language, ambiguous: true, case_sensitive: true, aliases: ["Julia"], context: ['(?i:julia language|julia programming|numerical|scientific|\bpython\b|\bmatlab\b)']}
+  - {canonical: sql, category: language, aliases: ["Structured Query Language"]}
+  - {canonical: plsql, category: language, aliases: ["PL/SQL", "PL-SQL"]}
+  - {canonical: tsql, category: language, aliases: ["T-SQL", "Transact-SQL"]}
+  - {canonical: bash, category: language, aliases: ["Shell scripting", "Bash scripting", "Shell script"]}
+  - {canonical: powershell, category: language}
+  - {canonical: cobol, category: language}
+  - {canonical: fortran, category: language}
+  - {canonical: solidity, category: language}
+  - {canonical: vba, category: language, aliases: ["Visual Basic for Applications", "Excel VBA"]}
+  - {canonical: vbnet, category: language, aliases: ["VB.NET", "Visual Basic"], implies: [dotnet]}
+  - {canonical: delphi, category: language}
+  - {canonical: assembly-language, category: language, aliases: ["Assembly language", "x86 assembly", "ARM assembly"]}
+  - {canonical: html, category: language, aliases: ["HTML5"]}
+  - {canonical: css, category: language, aliases: ["CSS3"]}
+  - {canonical: sass, category: language, aliases: ["SCSS"]}
+  - {canonical: verilog, category: language, aliases: ["SystemVerilog"]}
+  - {canonical: vhdl, category: language}
+  - {canonical: lisp, category: language, aliases: ["Common Lisp"]}
+  - {canonical: scheme, category: language, aliases: ["Scheme language"]}
+  - {canonical: prolog, category: language}
+  - {canonical: zig, category: language, aliases: ["Zig language"]}
+  - {canonical: nim, category: language, aliases: ["Nim language"]}
+  - {canonical: crystal, category: language, aliases: ["Crystal language"]}
+  - {canonical: apex, category: language, aliases: ["Salesforce Apex"]}
+  - {canonical: abap, category: language}
+  - {canonical: gdscript, category: language}
+  - {canonical: sas, category: language, case_sensitive: true, aliases: ["SAS"]}
+  - {canonical: awk, category: language, case_sensitive: true, aliases: ["AWK"]}
+  - {canonical: webassembly, category: language, aliases: ["WASM"]}
+  # ---- Web / backend frameworks ----
+  - {canonical: react, category: framework, aliases: ["ReactJS", "React.js"]}
+  - {canonical: react-native, category: mobile, aliases: ["React Native"]}
+  - {canonical: nextjs, category: framework, aliases: ["Next.js", "Next JS"]}
+  - {canonical: angular, category: framework, aliases: ["AngularJS", "Angular.js", "Angular 2+"]}
+  - {canonical: vue, category: framework, aliases: ["Vue.js", "VueJS", "Vue 3"]}
+  - {canonical: nuxt, category: framework, aliases: ["Nuxt.js", "NuxtJS"]}
+  - {canonical: svelte, category: framework, aliases: ["SvelteKit"]}
+  - {canonical: remix, category: framework, ambiguous: true, case_sensitive: true, aliases: ["Remix"], context: ['(?i:react|nextjs|ssr|framework)']}
+  - {canonical: gatsby, category: framework, aliases: ["GatsbyJS"]}
+  - {canonical: ember, category: framework, aliases: ["Ember.js", "EmberJS"]}
+  - {canonical: backbone, category: framework, aliases: ["Backbone.js"]}
+  - {canonical: jquery, category: library}
+  - {canonical: redux, category: library, aliases: ["Redux Toolkit", "Redux-Saga"]}
+  - {canonical: mobx, category: library}
+  - {canonical: rxjs, category: library}
+  - {canonical: graphql-apollo, category: library, aliases: ["Apollo Client", "Apollo Server", "Apollo GraphQL"]}
+  - {canonical: tailwind, category: framework, aliases: ["Tailwind CSS", "TailwindCSS"]}
+  - {canonical: bootstrap, category: framework, aliases: ["Bootstrap 5"]}
+  - {canonical: material-ui, category: library, aliases: ["MUI", "Material UI"]}
+  - {canonical: shadcn-ui, category: library, aliases: ["shadcn", "shadcn/ui"]}
+  - {canonical: storybook, category: tool}
+  - {canonical: webpack, category: tool}
+  - {canonical: vite, category: tool}
+  - {canonical: babel, category: tool, aliases: ["Babel.js"]}
+  - {canonical: npm, category: tool}
+  - {canonical: pnpm, category: tool}
+  - {canonical: electron, category: framework, aliases: ["Electron.js"]}
+  - {canonical: threejs, category: library, aliases: ["Three.js"]}
+  - {canonical: d3, category: library, aliases: ["D3.js"]}
+  - canonical: nodejs
+    category: framework
+    ambiguous: true
+    aliases: ["node"]
+    strong_aliases: ["Node.js", "NodeJS", "Node JS"]
+    context: ['(?i:npm|express|backend|server-side|\bjs\b|javascript|typescript|nestjs)']
+  - canonical: express
+    category: framework
+    ambiguous: true
+    aliases: ["Express"]
+    strong_aliases: ["Express.js", "ExpressJS"]
+    context: ['(?i:node|middleware|\bmern\b|\bmean\b|javascript|rest api)']
+  - {canonical: nestjs, category: framework, aliases: ["NestJS", "Nest.js"]}
+  - {canonical: fastify, category: framework}
+  - {canonical: koa, category: framework, aliases: ["Koa.js"]}
+  - {canonical: deno, category: framework}
+  - {canonical: bun, category: framework, ambiguous: true, case_sensitive: true, aliases: ["Bun"], context: ['(?i:javascript|runtime|node|typescript)']}
+  - {canonical: django, category: framework, aliases: ["Django REST Framework", "DRF"]}
+  - {canonical: flask, category: framework}
+  - {canonical: fastapi, category: framework}
+  - {canonical: tornado, category: framework, ambiguous: true, case_sensitive: true, aliases: ["Tornado"], context: ['(?i:python|async|framework)']}
+  - {canonical: celery, category: framework}
+  - {canonical: pydantic, category: library}
+  - {canonical: sqlalchemy, category: library}
+  - {canonical: spring, category: framework, ambiguous: true, case_sensitive: true, aliases: ["Spring"], strong_aliases: ["Spring Framework", "Spring MVC", "Spring Data", "Spring Security", "Spring Cloud"], context: ['(?i:\bjava\b|\bjpa\b|hibernate|\bmvc\b|dependency injection|\bioc\b)']}
+  - {canonical: spring-boot, category: framework, aliases: ["SpringBoot"]}
+  - {canonical: hibernate, category: library, aliases: ["JPA"]}
+  - {canonical: micronaut, category: framework}
+  - {canonical: quarkus, category: framework}
+  - {canonical: vertx, category: framework, aliases: ["Vert.x"]}
+  - {canonical: dotnet, category: framework, aliases: [".NET", "dotnet", ".NET Core", ".NET 6", ".NET 8", ".NET Framework", "DotNetCore"]}
+  - {canonical: aspnet, category: framework, aliases: ["ASP.NET", "ASP.NET Core", "ASP.NET MVC", "ASP.NET Web API"], implies: [dotnet]}
+  - {canonical: entity-framework, category: library, aliases: ["EF Core"], implies: [dotnet]}
+  - {canonical: rails, category: framework, aliases: ["Ruby on Rails", "RoR"]}
+  - {canonical: sinatra, category: framework}
+  - {canonical: laravel, category: framework}
+  - {canonical: symfony, category: framework}
+  - {canonical: wordpress, category: platform}
+  - {canonical: drupal, category: platform}
+  - {canonical: magento, category: platform}
+  - {canonical: shopify, category: platform}
+  - {canonical: phoenix, category: framework, ambiguous: true, case_sensitive: true, aliases: ["Phoenix"], context: ['(?i:elixir|liveview)']}
+  - {canonical: gin, category: framework, ambiguous: true, case_sensitive: true, aliases: ["Gin"], context: ['(?i:golang|\bgo\b)']}
+  - {canonical: grpc, category: concept, aliases: ["gRPC", "protobuf", "Protocol Buffers"]}
+  - {canonical: graphql, category: concept, aliases: ["GraphQL"]}
+  - {canonical: websockets, category: concept, aliases: ["WebSocket", "Socket.IO"]}
+  - {canonical: webrtc, category: concept}
+  - canonical: rest-api
+    category: concept
+    case_sensitive: true
+    aliases: ["REST"]
+    strong_aliases: ["RESTful", "REST APIs", "RESTful APIs", "RESTful API"]
+  - {canonical: openapi, category: concept, aliases: ["Swagger", "OpenAPI Specification"]}
+  - {canonical: microservices, category: concept, aliases: ["Microservice architecture"]}
+  # ---- Mobile ----
+  - {canonical: android, category: mobile, aliases: ["Android SDK", "Android development"]}
+  - {canonical: ios, category: mobile, aliases: ["iOS development", "iPhone development"]}
+  - {canonical: flutter, category: mobile}
+  - {canonical: jetpack-compose, category: mobile, aliases: ["Jetpack Compose"]}
+  - {canonical: swiftui, category: mobile}
+  - {canonical: uikit, category: mobile}
+  - {canonical: xamarin, category: mobile}
+  - {canonical: ionic, category: mobile}
+  - {canonical: cordova, category: mobile, aliases: ["PhoneGap"]}
+  - {canonical: expo, category: mobile, ambiguous: true, case_sensitive: true, aliases: ["Expo"], context: ['(?i:react native|mobile|eas\b)']}
+  - {canonical: kotlin-multiplatform, category: mobile, aliases: ["KMM", "Kotlin Multiplatform"]}
+  - {canonical: firebase, category: platform, aliases: ["Firebase Firestore", "Firestore"]}
+  - {canonical: xcode, category: tool}
+  - {canonical: android-studio, category: tool}
+  - {canonical: unity, category: platform, ambiguous: true, case_sensitive: true, aliases: ["Unity"], strong_aliases: ["Unity3D", "Unity 3D", "Unity engine"], context: ['(?i:game|3d|\bvr\b|\bar\b|unreal|c#|gameplay)']}
+  - {canonical: unreal-engine, category: platform, aliases: ["Unreal Engine", "UE5", "UE4"]}
+  # ---- Data / ML ----
+  - {canonical: pandas, category: library}
+  - {canonical: numpy, category: library}
+  - {canonical: scipy, category: library}
+  - {canonical: matplotlib, category: library}
+  - {canonical: seaborn, category: library}
+  - {canonical: plotly, category: library}
+  - {canonical: polars, category: library}
+  - {canonical: dask, category: library}
+  - {canonical: ray, category: library, ambiguous: true, case_sensitive: true, aliases: ["Ray"], strong_aliases: ["Ray Serve", "Ray Tune"], context: ['(?i:distributed|python|rllib|anyscale)']}
+  - {canonical: pyspark, category: data, aliases: ["PySpark"]}
+  - canonical: spark
+    category: data
+    ambiguous: true
+    case_sensitive: true
+    aliases: ["Spark"]
+    strong_aliases: ["Apache Spark", "Spark SQL"]
+    context: ['(?i:databricks|hadoop|scala|pyspark|\bhive\b|big data)']
+  - {canonical: hadoop, category: data, aliases: ["HDFS", "MapReduce"]}
+  - {canonical: hive, category: data, ambiguous: true, case_sensitive: true, aliases: ["Hive"], strong_aliases: ["Apache Hive", "HiveQL"], context: ['(?i:hadoop|hdfs|\bsql\b|spark|big data)']}
+  - {canonical: flink, category: data, aliases: ["Apache Flink"]}
+  - {canonical: kafka, category: data, aliases: ["Apache Kafka", "Kafka Streams", "Confluent"]}
+  - {canonical: airflow, category: data, aliases: ["Apache Airflow"]}
+  - {canonical: dagster, category: data}
+  - {canonical: prefect, category: data}
+  - {canonical: luigi, category: data, ambiguous: true, case_sensitive: true, aliases: ["Luigi"], context: ['(?i:python|pipeline|workflow)']}
+  - {canonical: dbt, category: data, aliases: ["dbt Core", "data build tool"]}
+  - {canonical: great-expectations, category: data, aliases: ["Great Expectations"]}
+  - {canonical: nifi, category: data, aliases: ["Apache NiFi"]}
+  - {canonical: beam, category: data, aliases: ["Apache Beam"]}
+  - {canonical: presto, category: data, aliases: ["Trino", "PrestoDB"]}
+  - {canonical: snowflake, category: data, aliases: ["Snowflake Data Cloud", "Snowpark"]}
+  - {canonical: bigquery, category: data, aliases: ["Google BigQuery", "Big Query"]}
+  - {canonical: redshift, category: data, aliases: ["Amazon Redshift", "AWS Redshift"]}
+  - {canonical: databricks, category: data, aliases: ["Delta Lake", "Unity Catalog"]}
+  - {canonical: synapse, category: data, aliases: ["Azure Synapse"]}
+  - {canonical: azure-data-factory, category: data, aliases: ["Azure Data Factory", "ADF"]}
+  - {canonical: aws-glue, category: data, aliases: ["AWS Glue", "Glue ETL"]}
+  - {canonical: iceberg, category: data, aliases: ["Apache Iceberg"]}
+  - {canonical: hudi, category: data, aliases: ["Apache Hudi"]}
+  - {canonical: etl, category: data, aliases: ["ELT", "ETL pipelines", "ETL/ELT"]}
+  - {canonical: data-warehousing, category: data, aliases: ["Data warehouse", "Data warehouses", "DWH"]}
+  - {canonical: data-modeling, category: data, aliases: ["Data modelling", "Dimensional modeling", "Star schema"]}
+  - {canonical: data-pipelines, category: data, aliases: ["Data pipeline", "Data pipelines"]}
+  - {canonical: data-lake, category: data, aliases: ["Data lakehouse", "Lakehouse", "Data lakes"]}
+  - {canonical: data-engineering, category: data}
+  - {canonical: data-analysis, category: data, aliases: ["Data analytics", "Exploratory data analysis", "EDA"]}
+  - {canonical: tableau, category: tool}
+  - {canonical: power-bi, category: tool, aliases: ["PowerBI", "Power BI"]}
+  - {canonical: looker, category: tool, aliases: ["LookML", "Looker Studio"]}
+  - {canonical: metabase, category: tool}
+  - {canonical: superset, category: tool, aliases: ["Apache Superset"]}
+  - {canonical: qlik, category: tool, aliases: ["QlikView", "Qlik Sense"]}
+  - {canonical: excel, category: tool, ambiguous: true, case_sensitive: true, aliases: ["Excel"], strong_aliases: ["MS Excel", "Microsoft Excel", "Advanced Excel"], context: ['(?i:spreadsheet|pivot|vlookup|macros?|google sheets|\bvba\b)']}
+  - {canonical: google-sheets, category: tool, aliases: ["Google Sheets"]}
+  - {canonical: tensorflow, category: ml, aliases: ["TF2", "TensorFlow Lite", "TFLite"]}
+  - {canonical: keras, category: ml}
+  - {canonical: pytorch, category: ml, aliases: ["PyTorch Lightning"]}
+  - {canonical: jax, category: ml, case_sensitive: true, aliases: ["JAX"], strong_aliases: ["Flax"]}
+  - {canonical: scikit-learn, category: ml, aliases: ["sklearn", "scikit learn"]}
+  - {canonical: xgboost, category: ml, aliases: ["LightGBM", "CatBoost"]}
+  - {canonical: huggingface, category: ml, aliases: ["Hugging Face", "HuggingFace", "Transformers library"]}
+  - {canonical: langchain, category: ml, aliases: ["LangGraph", "LlamaIndex"]}
+  - {canonical: llm, category: ml, aliases: ["LLMs", "Large Language Models", "Large Language Model", "GPT-4", "Claude API", "OpenAI API"]}
+  - {canonical: rag, category: ml, case_sensitive: true, aliases: ["RAG"], strong_aliases: ["Retrieval Augmented Generation", "Retrieval-Augmented Generation"]}
+  - {canonical: prompt-engineering, category: ml, aliases: ["Prompt design"]}
+  - {canonical: fine-tuning, category: ml, aliases: ["Finetuning", "LoRA", "PEFT"]}
+  - {canonical: vector-database, category: database, aliases: ["Vector databases", "Vector DB", "Vector search", "Pinecone", "Weaviate", "Milvus", "Qdrant", "Chroma DB"]}
+  - {canonical: pgvector, category: database}
+  - {canonical: faiss, category: library, aliases: ["FAISS"]}
+  - {canonical: mlflow, category: ml, aliases: ["MLflow"]}
+  - {canonical: kubeflow, category: ml}
+  - {canonical: sagemaker, category: ml, aliases: ["AWS SageMaker", "Amazon SageMaker"]}
+  - {canonical: vertex-ai, category: ml, aliases: ["Vertex AI"]}
+  - {canonical: mlops, category: ml, aliases: ["ML Ops", "ML pipelines", "Model deployment"]}
+  - {canonical: machine-learning, category: ml, case_sensitive: true, aliases: ["ML"], strong_aliases: ["Machine Learning"]}
+  - {canonical: deep-learning, category: ml, aliases: ["Neural networks", "Neural network"]}
+  - {canonical: nlp, category: ml, case_sensitive: true, aliases: ["NLP"], strong_aliases: ["Natural Language Processing"]}
+  - {canonical: computer-vision, category: ml, aliases: ["Image processing", "Object detection"]}
+  - {canonical: reinforcement-learning, category: ml, aliases: ["RLHF"]}
+  - {canonical: recommender-systems, category: ml, aliases: ["Recommendation systems", "Recommendation engines", "Recommender systems"]}
+  - {canonical: information-retrieval, category: ml, aliases: ["Learning to rank", "Search relevance", "Semantic search"]}
+  - {canonical: time-series, category: ml, aliases: ["Time series forecasting", "Forecasting"]}
+  - {canonical: statistics, category: ml, aliases: ["Statistical modeling", "Statistical analysis", "Hypothesis testing"]}
+  - {canonical: a-b-testing, category: ml, aliases: ["A/B testing", "A/B tests", "AB testing", "Experimentation"]}
+  - {canonical: feature-engineering, category: ml, aliases: ["Feature store"]}
+  - {canonical: spacy, category: ml, aliases: ["spaCy"]}
+  - {canonical: nltk, category: ml}
+  - {canonical: onnx, category: ml, aliases: ["ONNX Runtime"]}
+  - {canonical: tensorrt, category: ml, aliases: ["TensorRT", "CUDA"]}
+  - {canonical: opencv, category: library, aliases: ["OpenCV"]}
+  - {canonical: generative-ai, category: ml, aliases: ["GenAI", "Gen AI", "Generative AI"]}
+  - {canonical: artificial-intelligence, category: ml, case_sensitive: true, aliases: ["AI"], strong_aliases: ["Artificial Intelligence"]}
+  # ---- Databases ----
+  - {canonical: postgresql, category: database, aliases: ["Postgres", "PostgreSQL 16", "PSQL"]}
+  - {canonical: mysql, category: database, aliases: ["MariaDB"]}
+  - {canonical: sqlite, category: database}
+  - {canonical: sql-server, category: database, aliases: ["MSSQL", "Microsoft SQL Server", "MS SQL"]}
+  - canonical: oracle-db
+    category: database
+    ambiguous: true
+    case_sensitive: true
+    aliases: ["Oracle"]
+    strong_aliases: ["Oracle Database", "Oracle DB", "Oracle 19c", "Oracle SQL"]
+    context: ['(?i:database|\bdba\b|\bsql\b|pl/sql|rdbms)']
+  - {canonical: mongodb, category: database, aliases: ["Mongo", "Mongoose", "MongoDB Atlas"]}
+  - {canonical: redis, category: database, aliases: ["Redis Cluster", "Valkey"]}
+  - {canonical: memcached, category: database}
+  - {canonical: cassandra, category: database, aliases: ["Apache Cassandra", "ScyllaDB"]}
+  - {canonical: dynamodb, category: database, aliases: ["DynamoDB", "Amazon DynamoDB"]}
+  - {canonical: cosmos-db, category: database, aliases: ["Cosmos DB", "CosmosDB", "Azure Cosmos DB"]}
+  - {canonical: elasticsearch, category: database, aliases: ["Elastic Search", "ELK", "ELK stack", "Kibana", "Logstash"]}
+  - {canonical: opensearch, category: database, aliases: ["Open Search"]}
+  - {canonical: solr, category: database, aliases: ["Apache Solr", "Lucene"]}
+  - {canonical: clickhouse, category: database, aliases: ["ClickHouse"]}
+  - {canonical: neo4j, category: database, aliases: ["Graph database", "Graph databases"]}
+  - {canonical: couchbase, category: database, aliases: ["CouchDB"]}
+  - {canonical: influxdb, category: database, aliases: ["InfluxDB", "TimescaleDB", "Prometheus TSDB"]}
+  - {canonical: cockroachdb, category: database, aliases: ["CockroachDB", "TiDB", "YugabyteDB", "Spanner", "Cloud Spanner"]}
+  - {canonical: rds, category: database, aliases: ["Amazon RDS", "AWS RDS", "Aurora", "Amazon Aurora"]}
+  - {canonical: teradata, category: database}
+  - {canonical: db2, category: database, aliases: ["IBM DB2"]}
+  - {canonical: hbase, category: database, aliases: ["Apache HBase"]}
+  - {canonical: nosql, category: database, aliases: ["NoSQL databases"]}
+  - {canonical: rdbms, category: database, aliases: ["Relational databases", "Relational database", "Relational database design"]}
+  - {canonical: database-design, category: database, aliases: ["Schema design", "Database schema design", "Database modeling"]}
+  - {canonical: query-optimization, category: database, aliases: ["SQL tuning", "Query tuning", "Query performance tuning", "Indexing strategies"]}
+  - {canonical: prisma, category: library, aliases: ["Prisma ORM"]}
+  - {canonical: typeorm, category: library}
+  - {canonical: sequelize, category: library}
+  - {canonical: drizzle, category: library, aliases: ["Drizzle ORM"]}
+  - {canonical: alembic, category: library}
+  - {canonical: liquibase, category: tool, aliases: ["Flyway"]}
+  # ---- Cloud ----
+  - {canonical: aws, category: cloud, aliases: ["Amazon Web Services"]}
+  - {canonical: ec2, category: cloud, aliases: ["Amazon EC2", "AWS EC2"]}
+  - {canonical: s3, category: cloud, aliases: ["Amazon S3", "AWS S3"]}
+  - {canonical: aws-lambda, category: cloud, aliases: ["AWS Lambda", "Lambda functions"]}
+  - {canonical: ecs, category: cloud, aliases: ["Amazon ECS", "AWS ECS", "Fargate"]}
+  - {canonical: eks, category: cloud, aliases: ["Amazon EKS", "AWS EKS"]}
+  - {canonical: cloudformation, category: cloud, aliases: ["AWS CloudFormation", "AWS CDK"]}
+  - {canonical: cloudwatch, category: cloud, aliases: ["AWS CloudWatch"]}
+  - {canonical: sqs, category: cloud, case_sensitive: true, aliases: ["SQS"], strong_aliases: ["Amazon SQS", "AWS SQS"]}
+  - {canonical: sns, category: cloud, case_sensitive: true, aliases: ["SNS"], strong_aliases: ["Amazon SNS", "AWS SNS"]}
+  - {canonical: kinesis, category: cloud, aliases: ["AWS Kinesis", "Amazon Kinesis"]}
+  - {canonical: api-gateway, category: cloud, aliases: ["AWS API Gateway", "Amazon API Gateway"]}
+  - {canonical: route53, category: cloud, aliases: ["Route 53", "Route53"]}
+  - {canonical: cloudfront, category: cloud, aliases: ["CloudFront", "AWS CloudFront"]}
+  - {canonical: aws-iam, category: cloud, aliases: ["AWS IAM"]}
+  - {canonical: gcp, category: cloud, aliases: ["Google Cloud", "Google Cloud Platform"]}
+  - {canonical: gke, category: cloud, aliases: ["Google Kubernetes Engine"]}
+  - {canonical: cloud-run, category: cloud, aliases: ["Google Cloud Run"]}
+  - {canonical: pubsub, category: cloud, aliases: ["Pub/Sub", "Google Pub/Sub", "PubSub"]}
+  - {canonical: dataflow, category: cloud, aliases: ["Google Dataflow", "Cloud Dataflow"]}
+  - {canonical: azure, category: cloud, aliases: ["Microsoft Azure"]}
+  - {canonical: aks, category: cloud, aliases: ["Azure Kubernetes Service"]}
+  - {canonical: azure-functions, category: cloud, aliases: ["Azure Functions"]}
+  - {canonical: azure-devops, category: devops, aliases: ["Azure DevOps", "Azure Pipelines"]}
+  - {canonical: cloud-computing, category: cloud, aliases: ["Cloud infrastructure", "Cloud-native", "Cloud native"]}
+  - {canonical: serverless, category: cloud, aliases: ["Serverless architecture", "Serverless Framework"]}
+  - {canonical: cloudflare, category: cloud, aliases: ["Cloudflare Workers"]}
+  - {canonical: vercel, category: platform}
+  - {canonical: netlify, category: platform}
+  - {canonical: heroku, category: platform}
+  - {canonical: digitalocean, category: cloud, aliases: ["DigitalOcean"]}
+  - {canonical: openstack, category: cloud}
+  - {canonical: vmware, category: cloud, aliases: ["vSphere", "ESXi"]}
+  # ---- DevOps / SRE ----
+  - {canonical: docker, category: devops, aliases: ["Dockerfile", "Docker Compose", "Docker Swarm", "Containerization", "Containers"]}
+  - {canonical: kubernetes, category: devops, aliases: ["K8s", "K8", "Kube"]}
+  - {canonical: helm, category: devops, aliases: ["Helm charts", "Helm chart"]}
+  - {canonical: terraform, category: devops, aliases: ["Terragrunt", "OpenTofu"]}
+  - {canonical: ansible, category: devops}
+  - {canonical: pulumi, category: devops}
+  - {canonical: chef, category: devops, ambiguous: true, case_sensitive: true, aliases: ["Chef"], context: ['(?i:puppet|ansible|cookbook|configuration management)']}
+  - {canonical: puppet, category: devops, ambiguous: true, case_sensitive: true, aliases: ["Puppet"], context: ['(?i:chef|ansible|configuration management|manifests?)']}
+  - {canonical: jenkins, category: devops}
+  - {canonical: github-actions, category: devops, aliases: ["GitHub Actions"]}
+  - {canonical: gitlab-ci, category: devops, aliases: ["GitLab CI", "GitLab CI/CD", "GitLab Pipelines"]}
+  - {canonical: circleci, category: devops, aliases: ["CircleCI", "Travis CI", "TeamCity", "Bamboo"]}
+  - {canonical: argo-cd, category: devops, aliases: ["Argo CD", "ArgoCD", "Argo Workflows", "FluxCD"]}
+  - {canonical: gitops, category: devops, aliases: ["GitOps"]}
+  - {canonical: ci-cd, category: devops, aliases: ["CI/CD", "CICD", "Continuous integration", "Continuous delivery", "Continuous deployment", "CI CD pipelines"]}
+  - {canonical: devops, category: devops, aliases: ["DevOps"]}
+  - {canonical: sre, category: devops, case_sensitive: true, aliases: ["SRE"], strong_aliases: ["Site Reliability Engineering", "Site Reliability"]}
+  - {canonical: devsecops, category: devops, aliases: ["DevSecOps"]}
+  - {canonical: platform-engineering, category: devops, aliases: ["Internal developer platform"]}
+  - {canonical: infrastructure-as-code, category: devops, aliases: ["IaC", "Infrastructure as code"]}
+  - {canonical: prometheus, category: devops}
+  - {canonical: grafana, category: devops, aliases: ["Grafana Loki"]}
+  - {canonical: datadog, category: devops}
+  - {canonical: new-relic, category: devops, aliases: ["New Relic", "NewRelic"]}
+  - {canonical: splunk, category: devops}
+  - {canonical: opentelemetry, category: devops, aliases: ["OpenTelemetry", "OTel", "Jaeger", "Zipkin"]}
+  - {canonical: observability, category: devops, aliases: ["Distributed tracing", "APM"]}
+  - {canonical: pagerduty, category: devops, aliases: ["Opsgenie", "On-call"]}
+  - {canonical: sentry, category: devops, ambiguous: true, case_sensitive: true, aliases: ["Sentry"], context: ['(?i:error tracking|exception|monitoring|crash)']}
+  - {canonical: nginx, category: devops, aliases: ["HAProxy", "Envoy"]}
+  - {canonical: istio, category: devops, aliases: ["Service mesh", "Linkerd"]}
+  - {canonical: consul, category: devops, ambiguous: true, case_sensitive: true, aliases: ["Consul"], strong_aliases: ["HashiCorp Consul"], context: ['(?i:service discovery|hashicorp|terraform)']}
+  - {canonical: vault, category: security, aliases: ["HashiCorp Vault"]}
+  - {canonical: linux, category: devops, aliases: ["Ubuntu", "CentOS", "RHEL", "Red Hat Enterprise Linux", "Debian", "Unix", "Linux administration"]}
+  - {canonical: git, category: tool, aliases: ["Git version control", "Version control"]}
+  - {canonical: github, category: tool}
+  - {canonical: gitlab, category: tool}
+  - {canonical: bitbucket, category: tool}
+  - canonical: make
+    category: tool
+    ambiguous: true
+    case_sensitive: true
+    aliases: ["Make"]
+    strong_aliases: ["Makefile", "Makefiles", "CMake", "GNU Make"]
+    context: ['(?i:makefile|cmake|gcc|build system)']
+  - {canonical: gradle, category: tool}
+  - {canonical: maven, category: tool, aliases: ["Apache Maven"]}
+  - {canonical: bazel, category: tool}
+  - {canonical: sonarqube, category: tool, aliases: ["SonarCloud"]}
+  - {canonical: nexus, category: tool, aliases: ["Artifactory", "JFrog"]}
+  - {canonical: capacity-planning, category: devops, aliases: ["Load balancing", "Autoscaling"]}
+  - {canonical: incident-management, category: devops, aliases: ["Incident response", "Postmortems", "Runbooks"]}
+  - {canonical: networking, category: devops, aliases: ["TCP/IP", "DNS", "VPN", "Load balancers", "Firewalls", "BGP"]}
+  - {canonical: shell, category: devops, aliases: ["Zsh", "Unix shell"]}
+  - {canonical: vagrant, category: devops}
+  - {canonical: packer, category: devops, ambiguous: true, case_sensitive: true, aliases: ["Packer"], context: ['(?i:hashicorp|\bami\b|terraform|image build)']}
+  - {canonical: containerd, category: devops, aliases: ["CRI-O", "Podman"]}
+  - {canonical: knative, category: devops, aliases: ["KEDA"]}
+  - {canonical: crossplane, category: devops, aliases: ["Kustomize"]}
+  # ---- Messaging / architecture ----
+  - {canonical: rabbitmq, category: tool, aliases: ["RabbitMQ", "AMQP", "ActiveMQ"]}
+  - {canonical: nats, category: tool, case_sensitive: true, aliases: ["NATS"]}
+  - {canonical: pulsar, category: data, aliases: ["Apache Pulsar"]}
+  - {canonical: message-queues, category: concept, aliases: ["Message queue", "Message brokers", "Message broker", "Message queues"]}
+  - {canonical: event-driven-architecture, category: concept, aliases: ["Event-driven", "Event driven architecture", "Event sourcing", "CQRS"]}
+  - {canonical: system-design, category: concept, aliases: ["System architecture", "Architecture design", "Low level design", "High level design", "LLD", "HLD"]}
+  - {canonical: distributed-systems, category: concept, aliases: ["Distributed computing", "Distributed system"]}
+  - {canonical: concurrency, category: concept, aliases: ["Multithreading", "Multi-threading", "Parallel programming", "Asynchronous programming"]}
+  - {canonical: data-structures, category: concept, aliases: ["Data structures and algorithms", "DSA"]}
+  - {canonical: algorithms, category: concept, aliases: ["Algorithm design"]}
+  - {canonical: design-patterns, category: concept, aliases: ["Design principles", "SOLID principles", "SOLID"]}
+  - {canonical: oop, category: concept, aliases: ["Object-oriented programming", "Object oriented programming", "Object-oriented design", "OOD"]}
+  - {canonical: functional-programming, category: concept, aliases: ["Functional programming"]}
+  - {canonical: domain-driven-design, category: concept, aliases: ["DDD"], case_sensitive: true, strong_aliases: ["Domain Driven Design"]}
+  - {canonical: api-design, category: concept, aliases: ["API development", "API design", "Web services", "Web APIs"]}
+  - {canonical: caching, category: concept, aliases: ["Cache invalidation", "CDN"]}
+  - {canonical: scalability, category: concept, aliases: ["High availability", "Fault tolerance", "Horizontal scaling", "Low latency", "High throughput"]}
+  - {canonical: performance-optimization, category: concept, aliases: ["Performance tuning", "Profiling"]}
+  - {canonical: software-architecture, category: concept, aliases: ["Clean architecture", "Hexagonal architecture", "Monolith decomposition"]}
+  - {canonical: refactoring, category: concept, aliases: ["Code refactoring", "Legacy modernization"]}
+  - {canonical: code-review, category: concept, aliases: ["Code reviews", "Pull requests"]}
+  - {canonical: technical-documentation, category: concept, aliases: ["Technical writing"]}
+  - {canonical: agile, category: concept, aliases: ["Scrum", "Kanban", "Agile methodologies", "Sprint planning", "SAFe"]}
+  - {canonical: jira, category: tool, aliases: ["Confluence", "Atlassian"]}
+  - {canonical: linear, category: tool, ambiguous: true, case_sensitive: true, aliases: ["Linear"], context: ['(?i:jira|issue tracking|project management)']}
+  - {canonical: figma, category: tool, aliases: ["Sketch app", "Adobe XD"]}
+  - {canonical: ux-design, category: concept, aliases: ["UX", "UI/UX", "User experience", "UX research", "Wireframing", "Prototyping", "User research"]}
+  - {canonical: design-systems, category: concept, aliases: ["Component library", "Component libraries"]}
+  - {canonical: accessibility, category: concept, aliases: ["WCAG", "ARIA", "a11y"]}
+  - {canonical: seo, category: concept, case_sensitive: true, aliases: ["SEO"], strong_aliases: ["Search engine optimization"]}
+  - {canonical: responsive-design, category: concept, aliases: ["Responsive web design", "Mobile-first", "Cross-browser"]}
+  - {canonical: pwa, category: concept, case_sensitive: true, aliases: ["PWA"], strong_aliases: ["Progressive Web Apps", "Progressive Web App", "Service workers"]}
+  - {canonical: ssr, category: concept, case_sensitive: true, aliases: ["SSR"], strong_aliases: ["Server-side rendering", "Server side rendering", "SSG", "Static site generation"]}
+  - {canonical: web-performance, category: concept, aliases: ["Core Web Vitals", "Lighthouse"]}
+  - {canonical: monorepo, category: tool, aliases: ["Monorepos", "Turborepo", "Nx monorepo", "Lerna"]}
+  - {canonical: micro-frontends, category: concept, aliases: ["Micro frontends", "Module Federation"]}
+  - {canonical: jwt, category: security, aliases: ["JSON Web Tokens", "JSON Web Token"]}
+  # ---- Testing ----
+  - {canonical: selenium, category: testing, aliases: ["Selenium WebDriver"]}
+  - {canonical: cypress, category: testing}
+  - {canonical: playwright, category: testing}
+  - {canonical: puppeteer, category: testing}
+  - {canonical: appium, category: testing}
+  - {canonical: junit, category: testing, aliases: ["JUnit 5", "TestNG"]}
+  - {canonical: mockito, category: testing}
+  - {canonical: pytest, category: testing, aliases: ["PyTest", "unittest"]}
+  - {canonical: jest, category: testing, aliases: ["Vitest", "React Testing Library", "Enzyme"]}
+  - {canonical: mocha, category: testing, ambiguous: true, case_sensitive: true, aliases: ["Mocha"], strong_aliases: ["Mocha.js"], context: ['(?i:chai|jest|node|javascript|unit test)']}
+  - {canonical: cucumber, category: testing, aliases: ["Gherkin", "BDD", "Behave"]}
+  - {canonical: robot-framework, category: testing, aliases: ["Robot Framework"]}
+  - {canonical: jmeter, category: testing, aliases: ["JMeter", "Gatling", "Locust", "k6", "Load testing", "Performance testing"]}
+  - {canonical: postman, category: testing, aliases: ["Postman collections", "Newman", "REST Assured", "RestAssured"]}
+  - {canonical: soapui, category: testing, aliases: ["SoapUI"]}
+  - {canonical: test-automation, category: testing, aliases: ["Automation testing", "Automated testing", "Test automation framework", "Automation frameworks"]}
+  - {canonical: manual-testing, category: testing, aliases: ["Manual QA", "Exploratory testing", "Regression testing"]}
+  - {canonical: unit-testing, category: testing, aliases: ["Unit tests", "Integration testing", "Integration tests", "End-to-end testing", "E2E testing"]}
+  - {canonical: tdd, category: testing, aliases: ["Test-driven development", "Test driven development"]}
+  - {canonical: api-testing, category: testing, aliases: ["API automation"]}
+  - {canonical: qa, category: testing, case_sensitive: true, aliases: ["QA"], strong_aliases: ["Quality Assurance", "SDET", "Test planning", "Test cases", "Test plans"]}
+  - {canonical: mobile-testing, category: testing, aliases: ["Espresso", "XCUITest", "Detox"]}
+  - {canonical: testcontainers, category: testing}
+  - {canonical: chaos-engineering, category: testing, aliases: ["Chaos Monkey", "Gremlin chaos"]}
+  - {canonical: contract-testing, category: testing, aliases: ["Pact"]}
+  - {canonical: accessibility-testing, category: testing, aliases: ["Axe-core", "axe accessibility"]}
+  # ---- Security ----
+  - {canonical: owasp, category: security, aliases: ["OWASP Top 10"]}
+  - {canonical: siem, category: security, case_sensitive: true, aliases: ["SIEM"], strong_aliases: ["QRadar", "Sentinel SIEM", "Microsoft Sentinel"]}
+  - {canonical: burp-suite, category: security, aliases: ["Burp Suite", "BurpSuite"]}
+  - {canonical: nmap, category: security, aliases: ["Metasploit", "Wireshark", "Kali Linux", "Nessus"]}
+  - {canonical: penetration-testing, category: security, aliases: ["Pen testing", "Pentesting", "Ethical hacking", "Vulnerability assessment", "VAPT", "Red team", "Red teaming"]}
+  - {canonical: iam, category: security, case_sensitive: true, aliases: ["IAM"], strong_aliases: ["Identity and Access Management", "Okta", "Auth0", "Keycloak"]}
+  - {canonical: oauth, category: security, aliases: ["OAuth2", "OAuth 2.0", "OIDC", "OpenID Connect"]}
+  - {canonical: saml, category: security, aliases: ["SSO", "Single sign-on"]}
+  - {canonical: ldap, category: security, aliases: ["Active Directory", "Azure AD", "Entra ID"]}
+  - {canonical: encryption, category: security, aliases: ["Cryptography", "TLS", "SSL", "PKI", "Public key infrastructure"]}
+  - {canonical: application-security, category: security, aliases: ["AppSec", "Secure coding", "Secure SDLC", "SAST", "DAST", "Threat modeling", "Threat modelling"]}
+  - {canonical: cloud-security, category: security, aliases: ["Security groups", "CSPM", "Cloud security posture"]}
+  - {canonical: soc, category: security, aliases: ["Security operations", "SOC analyst", "Threat hunting", "Incident handling", "Threat intelligence"]}
+  - {canonical: compliance, category: security, aliases: ["SOC 2", "SOC2", "ISO 27001", "GDPR", "HIPAA", "PCI DSS", "PCI-DSS"]}
+  - {canonical: malware-analysis, category: security, aliases: ["Reverse engineering", "Digital forensics", "Forensics"]}
+  - {canonical: zero-trust, category: security, aliases: ["Zero trust architecture"]}
+  - {canonical: endpoint-security, category: security, aliases: ["EDR", "CrowdStrike", "Endpoint protection"]}
+  - {canonical: network-security, category: security, aliases: ["IDS", "IPS", "WAF", "DDoS protection"]}
+  - {canonical: snyk, category: security, aliases: ["Dependabot", "Trivy", "Software composition analysis"]}
+  # ---- Embedded / hardware / systems ----
+  - {canonical: embedded-systems, category: platform, aliases: ["Embedded C", "Embedded software", "Firmware", "RTOS", "Microcontrollers", "Embedded Linux"]}
+  - {canonical: arduino, category: platform, aliases: ["Raspberry Pi", "ESP32", "STM32"]}
+  - {canonical: fpga, category: platform, case_sensitive: true, aliases: ["FPGA"], strong_aliases: ["FPGAs"]}
+  - {canonical: ros, category: platform, case_sensitive: true, aliases: ["ROS"], strong_aliases: ["ROS2", "Robot Operating System"]}
+  - {canonical: iot, category: platform, case_sensitive: true, aliases: ["IoT"], strong_aliases: ["Internet of Things", "MQTT"]}
+  - {canonical: linux-kernel, category: platform, aliases: ["Kernel development", "Device drivers", "Linux drivers", "eBPF"]}
+  - {canonical: opengl, category: platform, aliases: ["Vulkan", "DirectX", "Metal API", "WebGL", "GPU programming"]}
+  - {canonical: autosar, category: platform, aliases: ["CAN bus", "Automotive software"]}
+  - {canonical: qt, category: framework, case_sensitive: true, aliases: ["Qt"], strong_aliases: ["Qt5", "Qt6", "QML"]}
+  - {canonical: gtk, category: framework, aliases: ["wxWidgets"]}
+  - {canonical: boost, category: library, ambiguous: true, case_sensitive: true, aliases: ["Boost"], strong_aliases: ["Boost C++"], context: ['(?i:c\+\+|\bstl\b|libraries)']}
+  - {canonical: stl, category: library, case_sensitive: true, aliases: ["STL"], strong_aliases: ["C++ STL"]}
+  - {canonical: pthreads, category: library, aliases: ["POSIX threads", "POSIX"]}
+  - {canonical: compilers, category: concept, aliases: ["LLVM", "Compiler design", "GCC", "Clang"]}
+  - {canonical: low-level-programming, category: concept, aliases: ["Systems programming", "Memory management", "Bare-metal"]}
+  - {canonical: blockchain, category: platform, aliases: ["Smart contracts", "Web3", "Ethereum", "Hyperledger", "DeFi"]}
+  - {canonical: web3js, category: library, aliases: ["Web3.js", "ethers.js", "Hardhat"]}
+  # ---- Business systems / platforms ----
+  - {canonical: salesforce, category: platform, aliases: ["Salesforce CRM", "Salesforce Lightning", "SFDC"]}
+  - {canonical: sap, category: platform, case_sensitive: true, aliases: ["SAP"], strong_aliases: ["SAP HANA", "SAP S/4HANA", "SAP ERP"]}
+  - {canonical: servicenow, category: platform, aliases: ["ServiceNow"]}
+  - {canonical: workday, category: platform}
+  - {canonical: dynamics-365, category: platform, aliases: ["Dynamics 365", "Microsoft Dynamics", "Power Apps", "Power Automate"]}
+  - {canonical: hubspot, category: platform}
+  - {canonical: zendesk, category: platform}
+  - {canonical: stripe, category: platform, aliases: ["Razorpay", "Payment gateways", "Payment gateway", "PayU", "UPI"]}
+  - {canonical: twilio, category: platform, aliases: ["SendGrid", "Sendbird"]}
+  - {canonical: segment, category: platform, ambiguous: true, case_sensitive: true, aliases: ["Segment"], strong_aliases: ["Segment.io", "Mixpanel", "Amplitude", "Clevertap", "CleverTap"], context: ['(?i:analytics|cdp|tracking events)']}
+  - {canonical: google-analytics, category: tool, aliases: ["GA4", "Google Tag Manager", "GTM"]}
+  - {canonical: slack-api, category: platform, aliases: ["Slack API", "Slack bots"]}
+  - {canonical: zapier, category: platform, aliases: ["n8n", "No-code", "Low-code"]}
+  - {canonical: rpa, category: platform, case_sensitive: true, aliases: ["RPA"], strong_aliases: ["UiPath", "Automation Anywhere", "Blue Prism"]}
+  - {canonical: jupyter, category: tool, aliases: ["Jupyter Notebook", "Jupyter notebooks", "JupyterLab", "Google Colab", "Colab"]}
+  - {canonical: vscode, category: tool, aliases: ["VS Code", "Visual Studio Code", "IntelliJ", "PyCharm", "Visual Studio"]}
+  - {canonical: ffmpeg, category: tool, aliases: ["GStreamer", "Video encoding", "Video streaming", "HLS", "WebM"]}
+  - {canonical: kubernetes-operators, category: devops, aliases: ["Kubernetes operators", "Custom resource definitions", "CRDs"]}
+  - {canonical: etcd, category: devops, aliases: ["ZooKeeper", "Apache ZooKeeper"]}
+  - {canonical: oauth-proxy, category: security, aliases: ["API security"]}
+  - {canonical: gis, category: platform, case_sensitive: true, aliases: ["GIS"], strong_aliases: ["PostGIS", "ArcGIS", "QGIS", "Geospatial", "Mapbox", "Leaflet", "Google Maps API"]}
+  - {canonical: pdf-processing, category: tool, aliases: ["PDF parsing", "OCR", "Tesseract"]}
+  - {canonical: web-scraping, category: tool, aliases: ["Web crawling", "Scrapy", "BeautifulSoup", "Beautiful Soup", "Selenium scraping"]}
+  - {canonical: orm, category: concept, case_sensitive: true, aliases: ["ORM"], strong_aliases: ["ORMs", "Object-relational mapping"]}
+  - {canonical: json, category: concept, aliases: ["JSON APIs", "XML", "YAML", "Avro", "Parquet"]}
+  - {canonical: regex, category: concept, aliases: ["Regular expressions", "Regexes"]}
+  - {canonical: multi-tenancy, category: concept, aliases: ["Multi-tenant", "Multitenant", "Multi tenant architecture", "SaaS architecture"]}
+  - {canonical: feature-flags, category: concept, aliases: ["Feature toggles", "LaunchDarkly", "Canary releases", "Blue-green deployment"]}
+  - {canonical: rate-limiting, category: concept, aliases: ["Throttling", "Circuit breaker", "Circuit breakers", "Backpressure"]}
+  - {canonical: data-privacy, category: security, aliases: ["PII handling", "Data protection", "Privacy engineering"]}
+  - {canonical: customer-support-engineering, category: concept, aliases: ["Technical support", "Application support", "L2 support", "L3 support", "Production support"]}
+  - {canonical: technical-leadership, category: concept, aliases: ["Tech lead", "Mentoring", "Team leadership", "Engineering management"]}
+  - {canonical: product-management, category: concept, aliases: ["Product roadmap", "Product strategy", "Product analytics", "PRD"]}
+  - {canonical: sql-analytics, category: data, aliases: ["Window functions", "CTEs", "Stored procedures", "Query writing"]}
+  - {canonical: business-intelligence, category: data, aliases: ["BI tools", "Dashboards", "Reporting", "KPI reporting"]}
+  - {canonical: r-shiny, category: data, aliases: ["Shiny", "Streamlit", "Gradio", "Dash app"]}
+  - {canonical: hadoop-ecosystem, category: data, aliases: ["Hadoop ecosystem", "Big data", "Cloudera", "Hortonworks", "Impala"]}
+  - {canonical: gcs, category: cloud, aliases: ["Google Cloud Storage", "Cloud Storage"]}
+  - {canonical: cloud-functions, category: cloud, aliases: ["Google Cloud Functions", "Cloud Functions"]}
+  - {canonical: lambda-architecture, category: concept, aliases: ["Kappa architecture", "Stream processing", "Real-time processing", "Batch processing"]}
+  - {canonical: spark-streaming, category: data, aliases: ["Structured Streaming"]}
+  - {canonical: temporal, category: tool, ambiguous: true, case_sensitive: true, aliases: ["Temporal"], strong_aliases: ["Temporal.io", "Cadence workflow"], context: ['(?i:workflow|orchestration|durable|workflows)']}
+  - {canonical: ansible-tower, category: devops, aliases: ["AWX", "Rundeck"]}
+  - {canonical: tekton, category: devops, aliases: ["Spinnaker", "Harness CI", "Octopus Deploy"]}
+  - {canonical: cloud-migration, category: cloud, aliases: ["Lift and shift", "Cloud migrations", "Data migration", "Database migration"]}
+  - {canonical: disaster-recovery, category: devops, aliases: ["Backup and recovery", "Business continuity", "High availability architecture"]}
+  - {canonical: finops, category: cloud, aliases: ["Cloud cost optimization", "Cost optimization"]}
+  - {canonical: jvm, category: platform, case_sensitive: true, aliases: ["JVM"], strong_aliases: ["JVM tuning", "Garbage collection", "JDK"]}
+  - {canonical: gunicorn, category: framework, aliases: ["uWSGI", "Uvicorn", "ASGI", "WSGI"]}
+  - {canonical: asyncio, category: library, aliases: ["Twisted", "aiohttp", "httpx"]}
+  - {canonical: requests-lib, category: library, aliases: ["Python requests", "urllib3"]}
+  - {canonical: opencv-python, category: library, aliases: ["Pillow", "PIL"]}
+  - {canonical: lodash, category: library, aliases: ["Underscore.js", "Axios", "Moment.js", "date-fns"]}
+  - {canonical: formik, category: library, aliases: ["React Hook Form", "Zod", "Yup"]}
+  - {canonical: react-query, category: library, aliases: ["TanStack Query", "SWR", "React Router", "Zustand"]}
+  - {canonical: styled-components, category: library, aliases: ["Emotion", "CSS-in-JS", "CSS Modules"]}
+  - {canonical: ant-design, category: library, aliases: ["Ant Design", "AntD", "Chakra UI", "Radix UI", "Headless UI"]}
+  - {canonical: flexbox, category: concept, aliases: ["CSS Grid", "Flexbox layout"]}
+  - {canonical: websocket-servers, category: concept, aliases: ["Server-sent events", "SSE streaming", "Long polling"]}
+  - {canonical: nodejs-streams, category: concept, aliases: ["Event loop", "Worker threads"]}
+  - {canonical: openai, category: ml, aliases: ["Anthropic", "Gemini API", "Claude", "ChatGPT", "Mistral", "Llama", "Ollama", "vLLM"]}
+  - {canonical: agents, category: ml, aliases: ["AI agents", "Agentic workflows", "Tool use", "Function calling", "MCP"], case_sensitive: true}
+  - {canonical: evaluation-metrics, category: ml, aliases: ["nDCG", "MRR", "Precision and recall", "F1 score", "ROC AUC", "Model evaluation"]}
+  - {canonical: embeddings, category: ml, aliases: ["Sentence embeddings", "Text embeddings", "Word2Vec", "BERT", "Sentence-BERT", "SBERT"]}
+  - {canonical: transformers, category: ml, aliases: ["Transformer models", "Attention mechanisms", "GPT", "T5"], case_sensitive: true}
+  - {canonical: data-labeling, category: ml, aliases: ["Data annotation", "Labelbox", "Label Studio", "Annotation tools"]}
+  - {canonical: dvc, category: ml, aliases: ["Weights & Biases", "wandb", "Neptune.ai", "Comet ML"]}
+  - {canonical: triton, category: ml, aliases: ["TorchServe", "BentoML", "KServe", "Seldon", "Model serving"]}
+  - {canonical: gpu-computing, category: ml, aliases: ["GPU computing", "Distributed training", "Horovod", "DeepSpeed"]}
+  - {canonical: quantization, category: ml, aliases: ["Model compression", "Knowledge distillation", "Pruning"]}
+  - {canonical: speech-recognition, category: ml, aliases: ["ASR", "Whisper", "Text-to-speech", "TTS", "Speech processing"]}
+  - {canonical: anomaly-detection, category: ml, aliases: ["Fraud detection", "Churn prediction", "Predictive modeling", "Predictive modelling"]}
+  - {canonical: optimization, category: ml, aliases: ["Linear programming", "Operations research", "Mathematical optimization", "Gurobi", "OR-Tools"]}
+  - {canonical: simulation, category: ml, aliases: ["Monte Carlo", "Discrete event simulation", "Agent-based modeling"]}
+  - {canonical: bayesian-methods, category: ml, aliases: ["Bayesian inference", "Bayesian statistics", "PyMC", "Stan"], case_sensitive: true}
+  - {canonical: causal-inference, category: ml, aliases: ["Causal analysis", "Uplift modeling", "Propensity scoring"]}
