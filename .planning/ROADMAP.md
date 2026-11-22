@@ -268,7 +268,7 @@ Plans:
 
 **Mode:** mvp
 **Depends on**: Phase 5
-**Requirements**: ING-03, ING-10, ING-13, SRCH-08, PROF-05, RANK-09, RANK-10, AGENT-07, MEM-04, SEC-02, SEC-08, UI-10, UI-11, UI-14, UI-15, EVAL-05, EVAL-07, EVAL-09, EVAL-10, OPS-06, OPS-11, OPS-07, OPS-08, OPS-09, LNCH-02, LNCH-03
+**Requirements**: ING-03, ING-10, SRCH-08, PROF-05, RANK-09, RANK-10, AGENT-07, MEM-04, SEC-02, SEC-08, UI-10, UI-11, UI-14, UI-15, EVAL-05, EVAL-07, EVAL-09, EVAL-10, OPS-06, OPS-11, OPS-07, OPS-08, OPS-09, LNCH-02, LNCH-03
 **Success Criteria** (what must be TRUE):
 
   1. The index includes jobs extracted from the monthly HN "Who is hiring" thread, plus Greenhouse/Lever boards. Cross-source duplicates show once, junior and senior roles at one company stay separate, and a duplicate is promoted when its canonical job expires.

@@ -223,7 +223,7 @@ Deferred. Tracked but not in the current roadmap.
 | ING-10 | Phase 6 | Pending |
 | ING-11 | Phase 2 | Pending |
 | ING-12 | Phase 2 | Pending |
-| ING-13 | Phase 6 | Pending |
+| ING-13 | Phase 2 | Pending |
 | NORM-01 | Phase 2 | Pending |
 | NORM-02 | Phase 2 | Pending |
 | NORM-03 | Phase 2 | Pending |
@@ -324,7 +324,7 @@ Deferred. Tracked but not in the current roadmap.
 - Mapped to phases: 116 ✓
 - Unmapped: 0
 - MVP (Phases 1–5): 89 requirements = all 88 [MVP] + FND-07 (pulled forward; MEM-02 depends on it)
-- v1 completion (Phase 6): 25 requirements (ING-13 may move to Phase 2 depending on the ING-00 spike)
+- v1 completion (Phase 6): 25 requirements (ING-13 moved to Phase 2 per ADR 0001 / D-14)
 
 ---
 *Requirements defined: 2026-11-21*
