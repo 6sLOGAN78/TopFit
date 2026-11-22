@@ -63,6 +63,9 @@ Adzuna is pending activation with 25 test calls and paid plans need a card, so t
 
 "data analyst" titles count as in scope (data family); sysadmin and IT admin do not (D-05 default).
 
+Himalayas: not ingested — 0 of 20 sampled postings were India-eligible (spike 2026-11-22); revisit if its API gains a location filter.
+Jobicy: ingested without the geo filter (geo=india returned HTTP 400); expected India-eligible yield is near 0, kept for remote-worldwide postings.
+
 Active-job target: 1500
 The 10,000 of D-02 is unreachable without Adzuna; the free sources measured about 1,900 listed jobs, about 1,500 after dedupe and scope filtering. Raise the target if an Adzuna plan is activated.
 
