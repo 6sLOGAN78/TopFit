@@ -1,0 +1,15 @@
+# USD per million tokens. Source: https://platform.claude.com/docs/en/about-claude/pricing
+# (verified 2026-11-21 via RESEARCH.md). Haiku 5.5 long-context (>100k prompt) tier is not
+# listed here: our prompts are far below it, so the base tier applies. Unknown models fail closed.
+as_of: "2026-11-21"
+models:
+  claude-haiku-5-5:
+    input: 0.10
+    output: 0.50
+    cache_write_5m: 0.125
+    cache_read: 0.01
+  claude-sonnet-5-5:
+    input: 2.00
+    output: 10.00
+    cache_write_5m: 2.50
+    cache_read: 0.10
