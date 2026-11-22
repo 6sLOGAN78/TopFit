@@ -6,7 +6,7 @@ added later reads ``request.cookies`` directly so this OpenAPI schema does not c
 
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import StringConstraints
 
 from ranker.search.config import pipeline_version, ranking_config
@@ -21,6 +21,7 @@ from ranker.search.models import (
     WorkMode,
     clean_query,
 )
+from ranker.search.ratelimit import rate_limit_search
 from ranker.search.service import PROMPT_VERSION, SearchRequest, search
 
 router = APIRouter(prefix="/jobs", tags=["search"])
@@ -31,6 +32,7 @@ CityParam = Annotated[str, StringConstraints(max_length=60)]
 @router.get(
     "/search",
     response_model=SearchResponse,
+    dependencies=[Depends(rate_limit_search)],
     responses={422: {"model": ErrorResponse}, 429: {"model": ErrorResponse}},
 )
 async def search_jobs(
@@ -81,6 +83,7 @@ async def search_jobs(
         auto_filters=auto,
         parse_model=parse_model,
         cursor=cursor,
+        guest_id=getattr(request.state, "guest_id", None),
     )
     return await search(
         state.engine,

@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     jev_model: str = "typesafe/jev-router"
     jev_reserve_usd: float = 0.001
     parse_fallback_timeout_seconds: float = 1.2
+    rate_limit_enabled: bool = True
+    rate_limit_guest_per_hour: int = 60
+    rate_limit_ip_per_hour: int = 300
+    rate_limit_trust_xff: bool = False
     adzuna_app_id: SecretStr | None = None
     adzuna_app_key: SecretStr | None = None
     admin_token: SecretStr | None = None
