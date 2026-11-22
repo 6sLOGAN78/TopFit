@@ -229,6 +229,7 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 **Research**: Yes. Run `/gsd:plan-phase --research-phase 4`: measure Haiku rerank latency/throughput with structured outputs (grammar compile cost, chunk sizing) before fixing the timeout. Decide on company industry/stage data (OPEN-4).
+**Owner note (2026-11-22), Jev:** add Jev (TypeSafe AI's multiple-choice "decision model") as an optional `ranker/llm/` provider for the dealbreaker set-aside (yes/no + confidence) and the Strong/Good/Stretch fit label. Add an ablation row comparing Jev and Claude Haiku on fit-label accuracy, latency and cost. Jev can't write reasons or chat, so Claude stays for those. Gate: confirmed API access, pricing/free tier and a pinned version (e.g. `jev-1.13.0`). See `.planning/phases/03-hybrid-search-eval-baseline/03-CONTEXT.md` D-06/D-07/D-17 (Phase 3 adds the provider for query parsing).
 
 ### Phase 5: Grounded Agent, Memory & MVP Launch
 
