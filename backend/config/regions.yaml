@@ -1,0 +1,125 @@
+# Remote-eligibility phrases (NORM-03). Case-insensitive, whole-word matching.
+#
+# `phrases` are scanned in region hints (Remotive candidate_required_location, Lever country)
+# and in job descriptions. `hint_only` phrases are only scanned in the short hint field,
+# where a bare "US" or "anywhere" is unambiguous but would be noise in a long description
+# ("join us", "anywhere in the company").
+#
+# The `india` token also includes every Indian city name from cities.yaml (added at load).
+#
+# Choices (recorded in docs/decisions/0002-remote-eligibility-and-scope.md):
+#   - Singapore counts as apac, and an APAC list that does not name India still counts as
+#     apac. Ranking may weaken "APAC without India" later.
+#   - Precedence: worldwide > india > apac > only-us (us_only) > only-eu (eu_only) >
+#     any other token (other_region) > unknown.
+tokens:
+  worldwide:
+    phrases:
+      - worldwide
+      - work from anywhere
+      - fully remote (anywhere)
+      - remote anywhere
+      - anywhere in the world
+      - global remote
+    hint_only: [anywhere, global, remote - worldwide]
+  india:
+    phrases:
+      - india
+      - remote - india
+      - remote (india)
+      - indian time
+      - ist overlap
+      - ist
+      - must be based in india
+      - utc+5:30
+      - gmt+5:30
+      - utc+5.5
+      - ncr
+      - pan india
+    hint_only: []
+  apac:
+    phrases:
+      - apac
+      - asia
+      - asia pacific
+      - singapore
+      - southeast asia
+      - utc+8
+      - gmt+8
+      - utc+9
+      - gmt+9
+      - hong kong
+      - japan
+      - philippines
+      - indonesia
+      - malaysia
+    hint_only: []
+  us:
+    phrases:
+      - usa
+      - us only
+      - u.s.
+      - u.s.a.
+      - united states
+      - us timezones
+      - us time zones
+      - us timezone
+      - est
+      - pst
+      - cst
+      - north america
+      - canada
+      - must reside in the us
+      - must be located in the us
+      - us citizens
+      - us citizen
+      - us work authorization
+      - authorized to work in the us
+    hint_only: [us, america]
+  eu:
+    phrases:
+      - europe
+      - european union
+      - emea
+      - uk
+      - united kingdom
+      - cet
+      - gmt
+      - eu timezone
+      - eu time zone
+      - eu timezones
+      - germany
+      - france
+      - spain
+      - portugal
+      - italy
+      - poland
+      - netherlands
+      - ireland
+      - sweden
+      - denmark
+      - finland
+      - austria
+      - belgium
+      - romania
+    hint_only: [eu]
+  other:
+    phrases:
+      - latam
+      - latin america
+      - australia
+      - new zealand
+      - mexico
+      - brazil
+      - argentina
+      - colombia
+      - saudi arabia
+      - uae
+      - middle east
+      - africa
+      - nigeria
+      - kenya
+      - south africa
+      - israel
+      - turkey
+    hint_only: []
