@@ -16,6 +16,8 @@ EXTRA = [
     "IMAGE_TAG",
     "DEPLOY_SSH_KEY",
     "DEPLOY_KNOWN_HOSTS",
+    "EVAL_DATA_REPO",
+    "EVAL_DATA_TOKEN",
 ]
 
 

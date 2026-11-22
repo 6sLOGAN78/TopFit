@@ -13,5 +13,5 @@ web/out/
 
 # Eval: private snapshot and generated outputs must never be committed
 evals/data/job_pool_snapshot.jsonl.gz
-evals/data/pool.jsonl
+evals/data/pool.local.*
 evals/results/

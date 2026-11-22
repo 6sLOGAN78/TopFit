@@ -1,0 +1,13 @@
+{"id": "p01", "query": "backend roles in Bengaluru, Python, at least ₹10 LPA, remote is fine", "notes": "Demo query persona; mid-level backend", "explicit_filters": {"cities": ["Bengaluru"], "remote_ok": true, "min_salary_lpa": 10}}
+{"id": "p02", "query": "fresher Python developer, Bengaluru, entry level, FastAPI or Django", "notes": "Fresher backend, explicit filters", "explicit_filters": {"cities": ["Bengaluru"], "seniority": ["intern", "junior"]}}
+{"id": "p03", "query": "senior frontend engineer in Pune, React and TypeScript, hybrid", "notes": "Senior frontend, explicit filters", "explicit_filters": {"cities": ["Pune"], "work_modes": ["hybrid"], "seniority": ["senior"]}}
+{"id": "p04", "query": "full-stack developer in Hyderabad, Node.js and React, 3 years experience", "notes": "Mid full-stack"}
+{"id": "p05", "query": "data analyst in Chennai, SQL, Power BI, Excel, 2 years experience", "notes": "Mid data analyst"}
+{"id": "p06", "query": "remote data engineer in India, Spark, Airflow, 20 LPA or more", "notes": "Remote data engineer with salary floor", "explicit_filters": {"work_modes": ["remote"], "min_salary_lpa": 20}}
+{"id": "p07", "query": "machine learning engineer, Gurugram or Delhi NCR, PyTorch, NLP, senior", "notes": "Senior ML, Delhi NCR"}
+{"id": "p08", "query": "DevOps engineer in Mumbai, Kubernetes, AWS, Terraform", "notes": "Mid DevOps, Mumbai"}
+{"id": "p09", "query": "site reliability engineer, remote India, Linux, observability, on-call experience", "notes": "SRE remote, free text only"}
+{"id": "p10", "query": "junior frontend developer in Bengaluru, HTML CSS JavaScript, open to remote", "notes": "Fresher frontend"}
+{"id": "p11", "query": "lead backend engineer, Java Spring Boot, microservices, Hyderabad or Bengaluru", "notes": "Lead backend, Java"}
+{"id": "p12", "query": "data scientist fresher in Pune or Mumbai, Python, statistics, machine learning", "notes": "Fresher data science"}
+{"id": "p13", "query": "mobile or full-stack engineer in Chennai, hybrid, at least 15 LPA", "notes": "Mid full-stack with salary floor and hybrid", "explicit_filters": {"cities": ["Chennai"], "work_modes": ["hybrid"], "min_salary_lpa": 15}}
