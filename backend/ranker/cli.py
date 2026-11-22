@@ -37,6 +37,12 @@ from ranker.evals.ranking_eval import (
     run_ranking_eval,
 )
 from ranker.evals.ranking_eval import report_markdown as ranking_markdown
+from ranker.evals.snapshot import (
+    SHA_NAME,
+    SnapshotError,
+    export_snapshot,
+    load_snapshot,
+)
 from ranker.ingest.boards import boards_report, run_board_maintenance
 from ranker.ingest.expiry import ExpiryConfig, expire_ttl, purge_source
 from ranker.ingest.pipeline import (
@@ -54,6 +60,10 @@ boards_app = typer.Typer(no_args_is_help=True, add_completion=False, help="Publi
 app.add_typer(boards_app, name="boards")
 eval_app = typer.Typer(no_args_is_help=True, add_completion=False, help="Offline evaluations.")
 app.add_typer(eval_app, name="eval")
+snapshot_app = typer.Typer(
+    no_args_is_help=True, add_completion=False, help="Frozen eval job-pool snapshot."
+)
+eval_app.add_typer(snapshot_app, name="snapshot")
 runs_app = typer.Typer(no_args_is_help=True, add_completion=False, help="Ingest run quality.")
 app.add_typer(runs_app, name="runs")
 
@@ -293,6 +303,31 @@ async def _eval_ranking(
     return EXIT_FAILED if gate.status == "fail" else 0
 
 
+async def _snapshot_export(out: Path) -> int:
+    settings = get_settings()
+    engine = create_engine_from_settings(settings)
+    try:
+        meta = await export_snapshot(engine, out)
+    finally:
+        await engine.dispose()
+    typer.echo(json.dumps({**meta.as_json(), "out": str(meta.path)}))
+    return 0
+
+
+async def _snapshot_load(gz: Path, sha_file: Path, replace: bool) -> int:
+    settings = get_settings()
+    engine = create_engine_from_settings(settings)
+    try:
+        n = await load_snapshot(engine, gz, sha_file, dsn=settings.database_url, replace=replace)
+    except SnapshotError as exc:
+        typer.echo(json.dumps({"error": "SnapshotError", "detail": str(exc)}), err=True)
+        return EXIT_FAILED
+    finally:
+        await engine.dispose()
+    typer.echo(json.dumps({"loaded": n}))
+    return 0
+
+
 @app.callback()
 def main() -> None:
     """Ranker operator commands."""
@@ -469,6 +504,31 @@ def eval_ranking_cmd(
     except RankingEvalError as exc:
         raise usage("InvalidEvalFile", detail=str(exc)) from None
     raise typer.Exit(code)
+
+
+@snapshot_app.command("export")
+def snapshot_export_cmd(
+    out: Annotated[Path, typer.Option(help="Output directory")] = EVAL_DATA_DIR,
+) -> None:
+    """Write the deduplicated active-job snapshot, its sha256 and meta file."""
+    configure_logging(get_settings().log_level)
+    raise typer.Exit(asyncio.run(_snapshot_export(out)))
+
+
+@snapshot_app.command("load")
+def snapshot_load_cmd(
+    gz: Annotated[Path, typer.Option(help="job_pool_snapshot.jsonl.gz")],
+    sha256_file: Annotated[
+        Path | None, typer.Option(help="sha256sum file; default snapshot.sha256 beside --gz")
+    ] = None,
+    replace: Annotated[
+        bool, typer.Option(help="Truncate jobs first (eval databases only)")
+    ] = False,
+) -> None:
+    """Verify the hash, migrate DATABASE_URL to head and load the snapshot into it."""
+    configure_logging(get_settings().log_level)
+    sha_file = sha256_file or gz.parent / SHA_NAME
+    raise typer.Exit(asyncio.run(_snapshot_load(gz, sha_file, replace)))
 
 
 @runs_app.command("report")
