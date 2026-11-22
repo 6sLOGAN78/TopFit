@@ -20,6 +20,8 @@ services:
   api:
     image: ghcr.io/${GHCR_OWNER}/ranker-api:${IMAGE_TAG:-main}
     env_file: .env
+    environment:
+      RATE_LIMIT_TRUST_XFF: "true"
     init: true
     restart: unless-stopped
     mem_limit: 1g

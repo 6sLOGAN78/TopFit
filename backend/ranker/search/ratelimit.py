@@ -6,6 +6,7 @@ Two buckets per new search: a signed ``rk_gid`` guest cookie and an HMAC of the 
 
 import hashlib
 import hmac
+import ipaddress
 import math
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -52,7 +53,33 @@ def _guest_id(request: Request, settings: Settings) -> UUID:
     return uuid.uuid4()
 
 
+def client_ip(request: Request, settings: Settings) -> str:
+    """Real client IP. Trust boundary: X-Forwarded-For is honoured only when
+    RATE_LIMIT_TRUST_XFF is set (prod, where Caddy is the only published port and
+    overwrites the header for untrusted clients). Only the last hop, the one Caddy added,
+    is used; earlier entries are client-controlled."""
+    if settings.rate_limit_trust_xff:
+        last = request.headers.get("x-forwarded-for", "").split(",")[-1].strip()
+        if last:
+            return last
+    return request.client.host if request.client else "unknown"
+
+
+def normalize_ip(ip: str) -> str:
+    """IPv4 stays whole; IPv6 is cut to its /64; IPv4-mapped IPv6 counts as the IPv4."""
+    try:
+        addr = ipaddress.ip_address(ip)
+    except ValueError:
+        return ip
+    if isinstance(addr, ipaddress.IPv6Address):
+        if addr.ipv4_mapped is not None:
+            return str(addr.ipv4_mapped)
+        return str(ipaddress.ip_network(f"{addr}/64", strict=False).network_address)
+    return str(addr)
+
+
 def _ip_bucket(settings: Settings, ip: str) -> str:
+    ip = normalize_ip(ip)
     key = settings.session_secret.get_secret_value().encode()
     return "search:ip:" + hmac.new(key, ip.encode(), hashlib.sha256).hexdigest()[:32]
 
@@ -75,7 +102,7 @@ async def rate_limit_search(request: Request, response: Response) -> UUID | None
     )
     engine: AsyncEngine = request.app.state.engine
     now = datetime.now(UTC)
-    ip = request.client.host if request.client else "unknown"
+    ip = client_ip(request, settings)
     checks = (
         (f"search:g:{gid}", settings.rate_limit_guest_per_hour),
         (_ip_bucket(settings, ip), settings.rate_limit_ip_per_hour),

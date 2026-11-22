@@ -6,6 +6,8 @@ import time_machine
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 
+from ranker.search.ratelimit import normalize_ip
+
 PARAMS = {"q": "!!!"}  # cleans to something trivial; the limiter runs before the search
 
 
@@ -100,3 +102,45 @@ def test_invalid_cookie_gets_new_id(client: TestClient) -> None:
     assert r.status_code == 200
     assert "rk_gid=" in r.headers["set-cookie"]
     assert "rk_gid=garbage" not in r.headers["set-cookie"]
+
+
+def _ip_buckets(database_url: str) -> set[str]:
+    eng = create_engine(database_url)
+    with eng.connect() as conn:
+        rows = conn.execute(text("SELECT bucket FROM rate_limit_counters"))
+        out = {r[0] for r in rows if r[0].startswith("search:ip:")}
+    eng.dispose()
+    return out
+
+
+def test_xff_ignored_when_untrusted(client: TestClient, database_url: str) -> None:
+    client.get("/api/jobs/search", params=PARAMS, headers={"X-Forwarded-For": "9.9.9.9"})
+    first = _ip_buckets(database_url)
+    client.cookies.clear()
+    client.get("/api/jobs/search", params=PARAMS, headers={"X-Forwarded-For": "8.8.8.8"})
+    assert _ip_buckets(database_url) == first
+    assert len(first) == 1
+
+
+def test_xff_last_hop_when_trusted(
+    make_client: Callable[[dict[str, str]], TestClient], database_url: str
+) -> None:
+    c = make_client({"RATE_LIMIT_TRUST_XFF": "true"})
+    c.get("/api/jobs/search", params=PARAMS, headers={"X-Forwarded-For": "1.1.1.1, 5.5.5.5"})
+    a = _ip_buckets(database_url)
+    c.cookies.clear()
+    # spoofed leading hops must not change the bucket; the last hop does
+    c.get("/api/jobs/search", params=PARAMS, headers={"X-Forwarded-For": "2.2.2.2, 5.5.5.5"})
+    assert _ip_buckets(database_url) == a
+    c.cookies.clear()
+    c.get("/api/jobs/search", params=PARAMS, headers={"X-Forwarded-For": "5.5.5.6"})
+    assert len(_ip_buckets(database_url)) == 2
+
+
+def test_normalize_ip() -> None:
+    assert normalize_ip("203.0.113.7") == "203.0.113.7"
+    assert normalize_ip("2001:db8:1:2:aaaa:bbbb:cccc:dddd") == "2001:db8:1:2::"
+    assert normalize_ip("2001:db8:1:2::1") == normalize_ip("2001:db8:1:2:ffff::9")
+    assert normalize_ip("2001:db8:1:3::1") != normalize_ip("2001:db8:1:2::1")
+    assert normalize_ip("::ffff:203.0.113.7") == "203.0.113.7"
+    assert normalize_ip("garbage") == "garbage"
