@@ -11,16 +11,9 @@ from typing import Any, cast
 
 from pydantic import ValidationError
 
-from ranker.ingest.boards import (
-    Board,
-    BoardAdapter,
-    checked_url,
-    company_from_slug,
-    s,
-    seeds_for,
-    sync_seeds,
-)
+from ranker.ingest.board_registry import Board, checked_url, sync_seeds
 from ranker.ingest.sources.base import AdapterContext, RawJob, SourceAdapter, register
+from ranker.ingest.sources.boardbase import BoardAdapter, company_from_slug, s, seeds_for
 
 HOST = "boards-api.greenhouse.io"
 PATH = "/v1/boards/{slug}/jobs"

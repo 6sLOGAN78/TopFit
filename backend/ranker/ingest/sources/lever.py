@@ -11,20 +11,11 @@ from typing import Any, cast
 import httpx
 from pydantic import ValidationError
 
-from ranker.ingest.boards import (
-    Board,
-    BoardAdapter,
-    Host,
-    checked_url,
-    company_from_slug,
-    number,
-    s,
-    seeds_for,
-    sync_seeds,
-)
+from ranker.ingest.board_registry import Board, Host, checked_url, sync_seeds
 from ranker.ingest.http import SourceHTTPError, get_json
 from ranker.ingest.normalize.html import clean_description
 from ranker.ingest.sources.base import AdapterContext, RawJob, SourceAdapter, register
+from ranker.ingest.sources.boardbase import BoardAdapter, company_from_slug, number, s, seeds_for
 
 HOST = "api.lever.co"
 HOST_EU = "api.eu.lever.co"

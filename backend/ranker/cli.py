@@ -17,6 +17,7 @@ from ranker.config_loader import load_config
 from ranker.db.engine import create_engine_from_settings
 from ranker.embeddings.embedder import build_embedder
 from ranker.embeddings.service import embed_missing, invalidate_other_models
+from ranker.ingest.boards import boards_report, run_board_maintenance
 from ranker.ingest.expiry import ExpiryConfig, expire_ttl, purge_source
 from ranker.ingest.pipeline import (
     RunQuotaReached,
@@ -29,6 +30,8 @@ from ranker.observability import configure_logging
 from ranker.settings import get_settings
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
+boards_app = typer.Typer(no_args_is_help=True, add_completion=False, help="Public ATS boards.")
+app.add_typer(boards_app, name="boards")
 
 EXIT_FAILED = 1
 EXIT_USAGE = 2
@@ -116,6 +119,55 @@ async def _expire_ttl(source: str) -> int:
     return 0
 
 
+async def _boards_report() -> int:
+    engine = create_engine_from_settings(get_settings())
+    try:
+        rows = await boards_report(engine)
+    finally:
+        await engine.dispose()
+    for row in rows:
+        typer.echo(
+            json.dumps(
+                {
+                    "ats": row.ats,
+                    "slug": row.slug,
+                    "host": row.host,
+                    "status": row.status,
+                    "origin": row.origin,
+                    "in_scope_count": row.in_scope_count,
+                    "last_checked_at": row.last_checked_at.isoformat()
+                    if row.last_checked_at
+                    else None,
+                    "reason": row.reason,
+                }
+            )
+        )
+    return 0
+
+
+async def _boards_discover() -> int:
+    settings = get_settings()
+    engine = create_engine_from_settings(settings)
+    try:
+        result = await run_board_maintenance(engine, settings)
+    finally:
+        await engine.dispose()
+    typer.echo(
+        json.dumps(
+            {
+                "added": result.added,
+                "rejected": result.rejected,
+                "dropped": result.dropped,
+                "errors": len(result.errors),
+                "probes": result.probes,
+                "rechecked": result.rechecked,
+                "calls_used": result.calls_used,
+            }
+        )
+    )
+    return 0
+
+
 @app.callback()
 def main() -> None:
     """Ranker operator commands."""
@@ -184,6 +236,20 @@ def expire_ttl_cmd(
         raise typer.Exit(EXIT_USAGE) from None
     configure_logging(get_settings().log_level)
     raise typer.Exit(asyncio.run(_expire_ttl(source)))
+
+
+@boards_app.command("report")
+def boards_report_cmd() -> None:
+    """Print one JSON line per known board (status, origin, in-scope count, reason)."""
+    configure_logging(get_settings().log_level)
+    raise typer.Exit(asyncio.run(_boards_report()))
+
+
+@boards_app.command("discover")
+def boards_discover_cmd() -> None:
+    """Run board discovery plus the weekly re-check and print the summary."""
+    configure_logging(get_settings().log_level)
+    raise typer.Exit(asyncio.run(_boards_discover()))
 
 
 if __name__ == "__main__":

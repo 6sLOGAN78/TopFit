@@ -98,6 +98,10 @@ async def _enqueue_expire_ttl(engine: AsyncEngine, source: str) -> None:
     await enqueue(engine, "expire_ttl", {"source": source}, dedupe_key=f"expire_ttl:{source}")
 
 
+async def _enqueue_boards_recheck(engine: AsyncEngine) -> None:
+    await enqueue(engine, "boards_recheck", {}, dedupe_key="boards_recheck")
+
+
 async def _enqueue_backlog(engine: AsyncEngine) -> None:
     await enqueue(engine, "enrich_backlog", {}, dedupe_key="enrich_backlog")
 
@@ -170,6 +174,13 @@ def register_source_jobs(
                 id=f"expire_ttl:{name}",
                 replace_existing=True,
             )
+    scheduler.add_job(  # pyright: ignore[reportUnknownMemberType]
+        _enqueue_boards_recheck,
+        _cron(1, 0, "sun"),  # Sunday 06:30 IST, after the D-17 morning read
+        args=[engine],
+        id="boards_recheck",
+        replace_existing=True,
+    )
     scheduler.add_job(  # pyright: ignore[reportUnknownMemberType]
         _enqueue_backlog,
         _cron(*ENRICH_BACKLOG),  # 07:00 IST

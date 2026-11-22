@@ -1,394 +1,471 @@
-"""Registry and shared adapter base for public ATS boards (ING-13, D-03).
+"""Board discovery, weekly re-check and the ``boards`` registry facade (ING-13, D-03).
 
-Boards (Greenhouse, Lever, Ashby) live in ``source_boards``. Seeds come from sources.yaml and are
-synced at the start of every board fetch. A dropped board is never resurrected by a sync.
-
-Security (T-02-49): a slug must match ``SLUG_RE`` and a URL is built only from a fixed host in
-``ALLOWED_HOSTS`` plus the validated slug; nothing else ever chooses where a request goes.
+Registry functions live in ``board_registry`` and the adapter base in ``sources.boardbase``;
+they are re-exported here. Discovery never builds a URL from anything but an allow-listed host
+and a slug that passed ``SLUG_RE`` (T-02-49), probes at most ``max_discovery_probes`` candidates
+per run, one request per ``request_interval_seconds``.
 """
 
 import asyncio
+import importlib
 import re
-from collections.abc import AsyncIterator, Awaitable, Callable, Iterable
-from datetime import UTC, datetime
-from typing import ClassVar, Literal
+from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import httpx
 import structlog
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from ranker.ingest.http import SourceHTTPError, build_client, get_json
-from ranker.ingest.normalize.html import clean_description
-from ranker.ingest.normalize.location import normalize_location
-from ranker.ingest.normalize.region import detect_remote_eligibility
-from ranker.ingest.normalize.scope import classify_scope, classify_tech
-from ranker.ingest.sources.base import (
-    AdapterContext,
-    BaseSourceConfig,
-    FetchResult,
-    RawJob,
+from ranker.config_loader import load_config
+from ranker.ingest.board_registry import (
+    ALL_ATS,
+    ALLOWED_HOSTS,
+    SLUG_RE,
+    Ats,
+    Board,
+    BoardRow,
+    BoardSeed,
+    BoardStatus,
+    Host,
+    InvalidBoardSlug,
+    active_boards,
+    boards_report,
+    checked_url,
+    record_board_check,
+    sync_seeds,
+    valid_slug,
 )
+from ranker.ingest.http import SourceHTTPError, build_client, get_json
+from ranker.ingest.sources.base import BaseSourceConfig, RawJob, SourcesConfig
+from ranker.ingest.sources.boardbase import (
+    BoardAdapter,
+    BoardsConfig,
+    Sleep,
+    count_in_scope,
+    is_in_scope_for_india,
+    number,
+    s,
+    seeds_for,
+)
+from ranker.settings import Settings
 
 log = structlog.get_logger("ranker.ingest.boards")
 
-Ats = Literal["greenhouse", "lever", "ashby"]
-Host = Literal["global", "eu"]
-BoardStatus = Literal["seed", "active", "rejected", "dropped"]
-ALL_ATS: tuple[Ats, ...] = ("greenhouse", "lever", "ashby")
+__all__ = [
+    "ALLOWED_HOSTS",
+    "SLUG_RE",
+    "Board",
+    "BoardAdapter",
+    "BoardRow",
+    "BoardSeed",
+    "BoardsConfig",
+    "InvalidBoardSlug",
+    "active_boards",
+    "boards_report",
+    "checked_url",
+    "count_in_scope",
+    "is_in_scope_for_india",
+    "number",
+    "record_board_check",
+    "s",
+    "seeds_for",
+    "sync_seeds",
+    "valid_slug",
+]
 
-SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,62}$")
-ALLOWED_HOSTS = frozenset(
-    {"boards-api.greenhouse.io", "api.lever.co", "api.eu.lever.co", "api.ashbyhq.com"}
-)
-ELIGIBLE_REGIONS = frozenset({"india", "apac", "worldwide"})
-MAX_SALARY = 1e10  # anything larger is garbage, not a salary
+# --- discovery and weekly re-check (D-03) -------------------------------------------------
+
+REPROBE_REJECTED_DAYS = 30
+MAX_SCAN_CHARS = 5000  # per job description scanned for board links
+MIN_COMPANY_JOBS = 3
+_SLUG_PATTERN = r"([a-z0-9][a-z0-9-]{0,62})"
+# Board links seen in job text: boards.greenhouse.io/<slug>, job-boards(.eu).greenhouse.io/<slug>,
+# jobs.lever.co/<slug>, jobs.eu.lever.co/<slug>, jobs.ashbyhq.com/<slug>.
+_URL_PATTERNS: list[tuple[Ats, Host, re.Pattern[str]]] = [
+    ("greenhouse", "global", re.compile(r"boards\.greenhouse\.io/" + _SLUG_PATTERN)),
+    ("greenhouse", "global", re.compile(r"job-boards(?:\.eu)?\.greenhouse\.io/" + _SLUG_PATTERN)),
+    ("lever", "global", re.compile(r"jobs\.lever\.co/" + _SLUG_PATTERN)),
+    ("lever", "eu", re.compile(r"jobs\.eu\.lever\.co/" + _SLUG_PATTERN)),
+    ("ashby", "global", re.compile(r"jobs\.ashbyhq\.com/" + _SLUG_PATTERN)),
+]
+_NOT_SLUGS = frozenset({"embed", "v1", "api", "www", "jobs", "careers"})
+_NON_ALNUM = re.compile(r"[^a-z0-9]+")
 
 
-class InvalidBoardSlug(ValueError):
-    pass
+def _new_entries() -> list[dict[str, Any]]:
+    return []
 
 
-def valid_slug(slug: object) -> bool:
-    return isinstance(slug, str) and SLUG_RE.fullmatch(slug) is not None
+class DiscoveryResult(BaseModel):
+    added: list[dict[str, Any]] = Field(default_factory=_new_entries)
+    rejected: list[dict[str, Any]] = Field(default_factory=_new_entries)
+    dropped: list[dict[str, Any]] = Field(default_factory=_new_entries)
+    errors: list[dict[str, Any]] = Field(default_factory=_new_entries)
+    probes: int = 0
+    rechecked: int = 0
+    calls_used: int = 0
+
+    def merge(self, other: DiscoveryResult) -> DiscoveryResult:
+        return DiscoveryResult(
+            added=self.added + other.added,
+            rejected=self.rejected + other.rejected,
+            dropped=self.dropped + other.dropped,
+            errors=self.errors + other.errors,
+            probes=self.probes + other.probes,
+            rechecked=self.rechecked + other.rechecked,
+            calls_used=self.calls_used + other.calls_used,
+        )
 
 
-def checked_url(host: str, path: str, slug: str) -> str:
-    """Build ``https://{host}{path.format(slug)}`` for an allow-listed host and a valid slug."""
-    if host not in ALLOWED_HOSTS:
-        raise ValueError("host not allow-listed")
-    if not valid_slug(slug):
-        raise InvalidBoardSlug("invalid board slug")
-    return f"https://{host}{path.format(slug=slug)}"
-
-
-class BoardsConfig(BaseSourceConfig):
-    seeds: list[str] = Field(default_factory=lambda: list[str]())
-    min_in_scope_jobs: int = 5
-    max_discovery_probes: int = 40
-    request_interval_seconds: float = 1.0
-    india_candidates: list[str] = Field(default_factory=lambda: list[str]())
-
-
-class BoardSeed(BaseModel):
+class _Candidate(BaseModel):
     ats: Ats
     slug: str
     host: Host = "global"
-
-    @field_validator("slug")
-    @classmethod
-    def _slug(cls, v: str) -> str:
-        if not valid_slug(v):
-            raise ValueError("invalid board slug")
-        return v
+    priority: int
+    last_checked_at: datetime | None = None
 
 
-class Board(BaseModel):
-    ats: Ats
-    slug: str
-    host: Host
-    status: BoardStatus
-    origin: Literal["seed", "discovered"]
-    in_scope_count: int
-    zero_checks: int
-    last_checked_at: datetime | None
-    reason: str | None
+def extract_board_links(text_: str) -> list[tuple[Ats, str, Host]]:
+    """Board (ats, slug, host) triples found in ``text_`` (lowercased; linear-time regexes)."""
+    low = text_.lower()
+    found: list[tuple[Ats, str, Host]] = []
+    for ats, host, pattern in _URL_PATTERNS:
+        for m in pattern.finditer(low):
+            slug = m.group(1).rstrip("-")
+            if valid_slug(slug) and slug not in _NOT_SLUGS:
+                found.append((ats, slug, host))
+    return found
 
 
-BoardRow = Board
-
-
-def seeds_for(ats: Ats, cfg: BoardsConfig) -> list[BoardSeed]:
-    out: list[BoardSeed] = []
-    for slug in cfg.seeds:
-        if valid_slug(slug):
-            out.append(BoardSeed(ats=ats, slug=slug))
-        else:
-            log.warning("board_seed_invalid", ats=ats)
+def company_slug_variants(normalized_name: str) -> list[str]:
+    base = _NON_ALNUM.sub("-", normalized_name.lower()).strip("-")
+    squashed = base.replace("-", "")
+    if not squashed:
+        return []
+    variants = [squashed, base, squashed + "hq"]
+    out: list[str] = []
+    for v in variants:
+        if v and valid_slug(v) and v not in out:
+            out.append(v)
     return out
 
 
-_BOARD_COLS = (  # module constant, never user input
-    "ats, slug, host, status, origin, in_scope_count, zero_checks, last_checked_at, reason"
-)
+async def _known_pairs(engine: AsyncEngine) -> dict[tuple[str, str], tuple[str, datetime | None]]:
+    async with engine.connect() as conn:
+        rows = await conn.execute(
+            text("SELECT ats, slug, status, last_checked_at FROM source_boards")
+        )
+        return {(r.ats, r.slug): (r.status, r.last_checked_at) for r in rows}
 
 
-async def sync_seeds(engine: AsyncEngine, seeds: Iterable[BoardSeed]) -> int:
-    """Insert missing seeds with status ``seed``; existing rows (even dropped) are untouched."""
-    inserted = 0
-    async with engine.begin() as conn:
-        for seed in seeds:
-            res = await conn.execute(
-                text(
-                    "INSERT INTO source_boards (ats, slug, host, status, origin) "
-                    "VALUES (:ats, :slug, :host, 'seed', 'seed') ON CONFLICT (ats, slug) DO NOTHING"
-                ),
-                {"ats": seed.ats, "slug": seed.slug, "host": seed.host},
-            )
-            inserted += int(res.rowcount)  # pyright: ignore[reportAttributeAccessIssue]
-    return inserted
+async def _extracted_links(engine: AsyncEngine) -> set[tuple[Ats, str, Host]]:
+    out: set[tuple[Ats, str, Host]] = set()
+    async with engine.connect() as conn:
+        stream = await conn.stream(
+            text("SELECT url, left(description_raw, :n) AS d FROM jobs WHERE status = 'active'"),
+            {"n": MAX_SCAN_CHARS},
+        )
+        async for row in stream:
+            out.update(extract_board_links(f"{row.url} {row.d or ''}"))
+    return out
 
 
-async def active_boards(engine: AsyncEngine, ats: Ats) -> list[Board]:
+async def _company_names(engine: AsyncEngine) -> list[str]:
     async with engine.connect() as conn:
         rows = await conn.execute(
             text(
-                "SELECT " + _BOARD_COLS + " FROM source_boards "  # noqa: S608
-                "WHERE ats = :ats AND status IN ('seed','active') ORDER BY slug"
+                "SELECT c.normalized_name FROM companies c JOIN jobs j ON j.company_id = c.id "
+                "WHERE j.status = 'active' AND NOT c.is_placeholder "
+                "GROUP BY c.id, c.normalized_name HAVING count(*) >= :n ORDER BY c.normalized_name"
             ),
-            {"ats": ats},
+            {"n": MIN_COMPANY_JOBS},
         )
-        return [Board.model_validate(dict(r._mapping)) for r in rows]  # pyright: ignore[reportPrivateUsage]
+        return [r[0] for r in rows]
 
 
-async def boards_report(engine: AsyncEngine) -> list[Board]:
-    async with engine.connect() as conn:
-        rows = await conn.execute(
-            text(
-                "SELECT " + _BOARD_COLS + " FROM source_boards ORDER BY ats, slug"  # noqa: S608
+def _needs_probe(
+    known: dict[tuple[str, str], tuple[str, datetime | None]], ats: str, slug: str, now: datetime
+) -> bool:
+    entry = known.get((ats, slug))
+    if entry is None:
+        return True
+    status, last = entry
+    if status != "rejected":
+        return False
+    return last is None or now - last >= timedelta(days=REPROBE_REJECTED_DAYS)
+
+
+async def _candidates(engine: AsyncEngine, cfg: BoardsConfig, now: datetime) -> list[_Candidate]:
+    known = await _known_pairs(engine)
+    pool: dict[tuple[str, str], _Candidate] = {}
+
+    def offer(ats: Ats, slug: str, host: Host, priority: int) -> None:
+        if not valid_slug(slug) or not _needs_probe(known, ats, slug, now):
+            return
+        key = (ats, slug)
+        prev = pool.get(key)
+        last = known.get(key, ("", None))[1]
+        if prev is None or priority < prev.priority:
+            pool[key] = _Candidate(
+                ats=ats, slug=slug, host=host, priority=priority, last_checked_at=last
             )
-        )
-        return [Board.model_validate(dict(r._mapping)) for r in rows]  # pyright: ignore[reportPrivateUsage]
+
+    for ats, slug, host in sorted(await _extracted_links(engine)):
+        offer(ats, slug, host, 0)
+    for slug in cfg.india_candidates:
+        for ats in ALL_ATS:
+            offer(ats, slug, "global", 1)
+    for name in await _company_names(engine):
+        for slug in company_slug_variants(name):
+            for ats in ALL_ATS:
+                offer(ats, slug, "global", 2)
+    epoch = datetime.min.replace(tzinfo=UTC)
+    return sorted(
+        pool.values(),
+        key=lambda c: (c.priority, c.last_checked_at or epoch, c.ats, c.slug),
+    )
 
 
-ZERO_CHECKS_TO_DROP = 2
+def _ats_module(ats: Ats) -> Any:
+    if ats not in ALL_ATS:
+        raise ValueError("unknown ats")
+    return importlib.import_module(f"ranker.ingest.sources.{ats}")
 
 
-async def record_board_check(
-    engine: AsyncEngine,
+class _Probe(BaseModel):
+    status_code: int  # 0 = transport error
+    jobs: list[RawJob] = Field(default_factory=lambda: list[RawJob]())
+    host: Host | None = None
+
+
+async def _probe(
+    client: httpx.AsyncClient,
     ats: Ats,
     slug: str,
+    host: Host,
     *,
-    status_code: int,
-    in_scope_count: int,
-    host: Host | None = None,
-    count_zero: bool = True,
-) -> str:
-    """Apply one board check. 404 drops at once; two consecutive zero-in-scope checks drop.
+    sleep: Sleep,
+    on_attempt: Callable[[], None],
+) -> _Probe:
+    module = _ats_module(ats)
+    hosts: list[Host] = [host]
+    if ats == "lever" and host == "global":
+        hosts.append("eu")  # an EU site 404s on the global host
+    last_status = 404
+    for h in hosts:
+        url, params = module.board_request(slug, h)
+        try:
+            payload = await get_json(
+                client, url, params=params, max_attempts=3, sleep=sleep, on_attempt=on_attempt
+            )
+        except SourceHTTPError as exc:
+            last_status = exc.status or 0
+            if exc.status == 404:
+                continue
+            return _Probe(status_code=last_status)
+        jobs, _ = module.parse_board(payload, slug)
+        return _Probe(status_code=200, jobs=jobs, host=h if h != host else None)
+    return _Probe(status_code=last_status)
 
-    ``count_zero=False`` (used by the daily adapter fetches) never advances the zero counter, so
-    only the weekly re-check (D-03) can drop a board for being empty. Returns the new status, or
-    ``"unknown"`` when the board is not in the registry.
-    """
+
+async def _store_probed(
+    engine: AsyncEngine,
+    cand: _Candidate,
+    *,
+    status: BoardStatus,
+    in_scope: int,
+    reason: str | None,
+    host: Host | None,
+) -> None:
+    """Insert a discovered board, or refresh a previously rejected one (never a live board)."""
     now = datetime.now(UTC)
     async with engine.begin() as conn:
-        row = (
-            (
-                await conn.execute(
-                    text(
-                        "SELECT status, zero_checks FROM source_boards "
-                        "WHERE ats = :ats AND slug = :slug FOR UPDATE"
-                    ),
-                    {"ats": ats, "slug": slug},
-                )
-            )
-            .mappings()
-            .first()
-        )
-        if row is None:
-            return "unknown"
-        status: str = row["status"]
-        zero: int = row["zero_checks"]
-        reason: str | None = None
-        if status == "dropped":
-            return status
-        if status_code == 404:
-            status, reason = "dropped", "not_found"
-        elif status_code == 200:
-            if in_scope_count <= 0:
-                if count_zero:
-                    zero += 1
-                if zero >= ZERO_CHECKS_TO_DROP:
-                    status, reason = "dropped", "zero_in_scope"
-                elif status == "seed":
-                    status = "active"
-            else:
-                zero = 0
-                if status != "rejected":
-                    status = "active"
-        else:
-            return status
         await conn.execute(
             text(
-                "UPDATE source_boards SET status = :status, zero_checks = :zero, "
-                "in_scope_count = :n, last_checked_at = :now, updated_at = :now, "
-                "reason = :reason, host = COALESCE(:host, host) "
-                "WHERE ats = :ats AND slug = :slug"
+                "INSERT INTO source_boards "
+                "(ats, slug, host, status, origin, in_scope_count, last_checked_at, reason) "
+                "VALUES (:ats, :slug, :host, :status, 'discovered', :n, :now, :reason) "
+                "ON CONFLICT (ats, slug) DO UPDATE SET host = EXCLUDED.host, "
+                "status = EXCLUDED.status, in_scope_count = EXCLUDED.in_scope_count, "
+                "last_checked_at = EXCLUDED.last_checked_at, reason = EXCLUDED.reason, "
+                "zero_checks = 0, updated_at = EXCLUDED.last_checked_at "
+                "WHERE source_boards.status = 'rejected'"
             ),
             {
+                "ats": cand.ats,
+                "slug": cand.slug,
+                "host": host or cand.host,
                 "status": status,
-                "zero": zero,
-                "n": max(in_scope_count, 0) if status_code == 200 else 0,
+                "n": in_scope,
                 "now": now,
                 "reason": reason,
-                "host": host,
-                "ats": ats,
-                "slug": slug,
             },
         )
-        return status
 
 
-def is_in_scope_for_india(raw: RawJob) -> bool:
-    """A tech job located in India, or remote and open to India/APAC/worldwide candidates."""
-    if not classify_tech(raw.title, raw.category_hint).in_scope:
-        return False
-    description = clean_description(
-        raw.description_raw,
-        is_html=raw.description_is_html,
-        entity_escaped=raw.description_entity_escaped,
-    )
-    location = normalize_location(
-        raw.location_text,
-        parts=raw.location_parts,
-        workplace_hint=raw.workplace_hint,
-        country_hint=raw.country_hint,
-        description=description,
-    )
-    if not classify_scope(raw.title, raw.category_hint, location).in_scope:
-        return False
-    if location.country_code == "IN":
-        return True
-    region = detect_remote_eligibility(
-        region_hint=raw.region_hint,
-        description=description,
-        country_code=location.country_code,
-        remote_type=location.remote_type,
-    )
-    return region.remote_eligibility in ELIGIBLE_REGIONS
+async def discover_boards(
+    engine: AsyncEngine,
+    settings: Settings,
+    cfg: BoardsConfig,
+    client: httpx.AsyncClient,
+    *,
+    sleep: Sleep = asyncio.sleep,
+) -> DiscoveryResult:
+    """Probe new candidate boards; accept only those with >= N in-scope India/remote jobs."""
+    result = DiscoveryResult()
 
+    def attempt() -> None:
+        result.calls_used += 1
 
-def count_in_scope(raw_jobs: Iterable[RawJob]) -> int:
-    return sum(1 for job in raw_jobs if is_in_scope_for_india(job))
-
-
-# --- shared helpers for the three board adapters ------------------------------------------
-
-
-def s(value: object) -> str | None:
-    if isinstance(value, str):
-        value = value.strip()
-        return value or None
-    return None
-
-
-def number(value: object, *, maximum: float = MAX_SALARY) -> float | None:
-    """A finite, sane, non-negative number or None (bool and overflow-sized values rejected)."""
-    if isinstance(value, bool) or not isinstance(value, int | float):
-        return None
-    try:
-        v = float(value)
-    except OverflowError:
-        return None
-    if v != v or v < 0 or v > maximum:  # NaN, negative, absurd
-        return None
-    return v
-
-
-def company_from_slug(slug: str) -> str:
-    return slug.replace("-", " ").title()
-
-
-Sleep = Callable[[float], Awaitable[None]]
-
-
-class BoardAdapter:
-    """Fetch every active board of one ATS; each board is a scope (T-02-53)."""
-
-    name: ClassVar[str]
-    ats: ClassVar[Ats]
-    expiry_policy: Literal["absence", "ttl"] = "absence"
-
-    def __init__(self, ctx: AdapterContext, *, sleep: Sleep = asyncio.sleep) -> None:
-        self._cfg = BoardsConfig.model_validate(ctx.config.model_dump())
-        self._engine = ctx.engine
-        self._sleep = sleep
-        self._result = FetchResult()
-
-    def configured(self) -> bool:
-        return True
-
-    def _count_attempt(self) -> None:
-        self._result.calls_used += 1
-
-    # Subclass hooks ------------------------------------------------------------------------
-    def request(self, board: Board) -> tuple[str, dict[str, str]]:
-        raise NotImplementedError
-
-    def parse(self, payload: object, slug: str) -> tuple[list[RawJob], int]:
-        raise NotImplementedError
-
-    def payload_ok(self, payload: object) -> bool:
-        """True when ``payload`` has the shape of a board (an empty board still counts)."""
-        if not isinstance(payload, dict):
-            return False
-        return isinstance(payload.get("jobs"), list)  # pyright: ignore[reportUnknownMemberType]
-
-    async def get_payload(
-        self, client: httpx.AsyncClient, board: Board
-    ) -> tuple[object, Host | None]:
-        url, params = self.request(board)
-        payload = await get_json(
-            client, url, params=params, sleep=self._sleep, on_attempt=self._count_attempt
+    candidates = (await _candidates(engine, cfg, datetime.now(UTC)))[: cfg.max_discovery_probes]
+    for n, cand in enumerate(candidates):
+        if n:
+            await sleep(cfg.request_interval_seconds)
+        probe = await _probe(
+            client, cand.ats, cand.slug, cand.host, sleep=sleep, on_attempt=attempt
         )
-        return payload, None
-
-    # ---------------------------------------------------------------------------------------
-    async def fetch_boards(self) -> AsyncIterator[RawJob]:
-        """Fetch all active boards; callers must ``sync_seeds`` first (each adapter's fetch)."""
-        self._result = FetchResult()
-        boards = await active_boards(self._engine, self.ats)
-        async with build_client() as client:
-            for n, board in enumerate(boards):
-                if n:
-                    await self._sleep(self._cfg.request_interval_seconds)
-                try:
-                    payload, host = await self.get_payload(client, board)
-                except InvalidBoardSlug:
-                    self._result.failed_scopes[board.slug] = "InvalidSlug:None"
-                    continue
-                except SourceHTTPError as exc:
-                    self._result.failed_scopes[board.slug] = f"{exc.error_type}:{exc.status}"
-                    if exc.status == 404:
-                        await record_board_check(
-                            self._engine,
-                            self.ats,
-                            board.slug,
-                            status_code=404,
-                            in_scope_count=0,
-                            count_zero=False,
-                        )
-                    log.warning("board_fetch_failed", source=self.name, board=board.slug)
-                    continue
-                if not self.payload_ok(payload):
-                    self._result.failed_scopes[board.slug] = "InvalidPayload:None"
-                    continue
-                jobs, invalid = self.parse(payload, board.slug)
-                self._result.invalid_items += invalid
-                unique: dict[str, RawJob] = {}
-                for job in jobs:
-                    unique[job.source_job_id] = job  # last wins
-                self._result.complete_scopes.add(board.slug)
-                self._result.scope_counts[board.slug] = len(unique)
-                await record_board_check(
-                    self._engine,
-                    self.ats,
-                    board.slug,
-                    status_code=200,
-                    in_scope_count=count_in_scope(unique.values()),
-                    host=host,
-                    count_zero=False,
+        result.probes += 1
+        ref = {"ats": cand.ats, "slug": cand.slug}
+        if probe.status_code == 404:
+            await _store_probed(
+                engine, cand, status="rejected", in_scope=0, reason="not_found", host=None
+            )
+            result.rejected.append({**ref, "reason": "not_found"})
+        elif probe.status_code == 200:
+            in_scope = count_in_scope(probe.jobs)
+            if in_scope >= cfg.min_in_scope_jobs:
+                await _store_probed(
+                    engine, cand, status="active", in_scope=in_scope, reason=None, host=probe.host
                 )
-                for job in unique.values():
-                    yield job
-        log.info(
-            "source_fetch_done",
-            source=self.name,
-            boards=len(boards),
-            failed=len(self._result.failed_scopes),
-            calls=self._result.calls_used,
-        )
+                result.added.append({**ref, "in_scope": in_scope})
+            else:
+                reason = f"below_threshold:{in_scope}"
+                await _store_probed(
+                    engine,
+                    cand,
+                    status="rejected",
+                    in_scope=in_scope,
+                    reason=reason,
+                    host=probe.host,
+                )
+                result.rejected.append({**ref, "reason": reason})
+        else:
+            result.errors.append({**ref, "error": f"status:{probe.status_code}"})
+    log.info(
+        "board_discovery_done",
+        probes=result.probes,
+        added=len(result.added),
+        rejected=len(result.rejected),
+    )
+    return result
 
-    def result(self) -> FetchResult:
-        return self._result
+
+async def recheck_boards(
+    engine: AsyncEngine,
+    settings: Settings,
+    cfg: BoardsConfig,
+    client: httpx.AsyncClient,
+    *,
+    sleep: Sleep = asyncio.sleep,
+) -> DiscoveryResult:
+    """Probe every seed/active board once; 404 or two zero-in-scope checks drop a board."""
+    result = DiscoveryResult()
+
+    def attempt() -> None:
+        result.calls_used += 1
+
+    first = True
+    for ats in ALL_ATS:
+        for board in await active_boards(engine, ats):
+            if not first:
+                await sleep(cfg.request_interval_seconds)
+            first = False
+            probe = await _probe(
+                client, ats, board.slug, board.host, sleep=sleep, on_attempt=attempt
+            )
+            result.rechecked += 1
+            ref = {"ats": ats, "slug": board.slug}
+            if probe.status_code not in (200, 404):
+                result.errors.append({**ref, "error": f"status:{probe.status_code}"})
+                continue
+            status = await record_board_check(
+                engine,
+                ats,
+                board.slug,
+                status_code=probe.status_code,
+                in_scope_count=count_in_scope(probe.jobs),
+                host=probe.host,
+            )
+            if status == "dropped":
+                reason = "not_found" if probe.status_code == 404 else "zero_in_scope"
+                result.dropped.append({**ref, "reason": reason})
+    return result
+
+
+def _boards_config(section: BaseSourceConfig | None) -> BoardsConfig:
+    return BoardsConfig.model_validate(section.model_dump() if section else {})
+
+
+async def run_board_maintenance(
+    engine: AsyncEngine,
+    settings: Settings,
+    *,
+    sleep: Sleep = asyncio.sleep,
+    client: httpx.AsyncClient | None = None,
+) -> DiscoveryResult:
+    """Sync seeds, then discovery + weekly re-check; one ``ingest_runs`` row records it all."""
+    from ranker.ingest import store  # lazy: store imports normalize.job, which imports sources
+
+    sections = load_config("sources.yaml", SourcesConfig).root
+    for ats in ALL_ATS:
+        await sync_seeds(engine, seeds_for(ats, _boards_config(sections.get(ats))))
+    cfg = _boards_config(sections.get("greenhouse"))  # discovery settings + india_candidates
+    started = datetime.now(UTC)
+    async with engine.begin() as conn:
+        run_id = await store.create_run(conn, "board_discovery", "discovery", started)
+    owns_client = client is None
+    http = client or build_client()
+    result = DiscoveryResult()
+    status = "succeeded"
+    try:
+        result = await discover_boards(engine, settings, cfg, http, sleep=sleep)
+        result = result.merge(await recheck_boards(engine, settings, cfg, http, sleep=sleep))
+        if result.errors:
+            status = "partial"
+    except Exception as exc:
+        status = "failed"
+        log.warning("board_maintenance_failed", error_type=type(exc).__name__)
+        raise
+    finally:
+        if owns_client:
+            await http.aclose()
+        notes: dict[str, Any] = {
+            "added": result.added,
+            "rejected": result.rejected,
+            "dropped": result.dropped,
+            "rechecked": result.rechecked,
+        }
+        async with engine.begin() as conn:
+            await store.finish_run(
+                conn,
+                run_id,
+                status=status,
+                fetched=result.probes + result.rechecked,
+                inserted=len(result.added),
+                updated=0,
+                unchanged=0,
+                skipped=len(result.rejected),
+                failed=len(result.errors),
+                calls_used=result.calls_used,
+                in_scope=0,
+                errors=[
+                    {"source_job_id": None, "error": f"{e['ats']}/{e['slug']}:{e['error']}"}
+                    for e in result.errors
+                ],
+                notes=notes,
+                now=datetime.now(UTC),
+            )
+    return result

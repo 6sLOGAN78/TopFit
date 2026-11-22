@@ -1,4 +1,4 @@
-"""Task handler registry: enrich_job, enrich_backlog, ingest, expire_ttl."""
+"""Task handler registry: enrich_job, enrich_backlog, ingest, expire_ttl, boards_recheck."""
 
 import asyncio
 from collections.abc import Awaitable, Callable
@@ -83,6 +83,21 @@ def make_expire_ttl_handler(engine: AsyncEngine) -> Handler:
     return handler
 
 
+def make_boards_recheck_handler(settings: Settings, engine: AsyncEngine) -> Handler:
+    from ranker.ingest.boards import run_board_maintenance
+
+    async def handler(task: Task) -> None:
+        result = await run_board_maintenance(engine, settings)
+        log.info(
+            "boards_recheck_done",
+            added=len(result.added),
+            rejected=len(result.rejected),
+            dropped=len(result.dropped),
+        )
+
+    return handler
+
+
 def build_handlers(settings: Settings, engine: AsyncEngine) -> dict[str, Handler]:
     from ranker.ingest.enrich import make_backlog_handler, make_enrich_handler
     from ranker.llm.client import build_gateway
@@ -93,4 +108,5 @@ def build_handlers(settings: Settings, engine: AsyncEngine) -> dict[str, Handler
         "enrich_backlog": make_backlog_handler(engine),
         "ingest": make_ingest_handler(settings, engine),
         "expire_ttl": make_expire_ttl_handler(engine),
+        "boards_recheck": make_boards_recheck_handler(settings, engine),
     }

@@ -166,3 +166,22 @@ async def test_expire_ttl_task(engine: AsyncEngine) -> None:
     with structlog.testing.capture_logs() as logs:
         await handlers["expire_ttl"](absence)
     assert any(e["event"] == "expire_ttl_not_applicable" for e in logs)
+
+
+async def test_boards_recheck_handler_is_registered(
+    engine: AsyncEngine, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from ranker.ingest import boards
+
+    called: list[int] = []
+
+    async def fake(eng: AsyncEngine, settings: object) -> boards.DiscoveryResult:
+        called.append(1)
+        return boards.DiscoveryResult()
+
+    monkeypatch.setattr(boards, "run_board_maintenance", fake)  # before build: imported there
+    handlers = build_handlers(_settings(), engine)
+    assert "boards_recheck" in handlers
+    task = queue.Task(id=3, kind="boards_recheck", payload={}, attempts=1, max_attempts=5)
+    await handlers["boards_recheck"](task)
+    assert called == [1]

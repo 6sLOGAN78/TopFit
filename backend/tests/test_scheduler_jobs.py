@@ -239,3 +239,23 @@ def test_selfcheck_empty_config_dir(
     clear_config_cache()
     assert selfcheck.main() == 1
     assert json.loads(capsys.readouterr().out) == {"ok": False, "error": "ConfigError"}
+
+
+def test_board_sources_follow_the_d17_stagger_table() -> None:
+    scheduler = _register()
+    expected = {
+        "greenhouse": (("22", "0"), ("10", "0")),
+        "lever": (("22", "15"), ("10", "15")),
+        "ashby": (("22", "25"), ("10", "25")),
+    }
+    for name, (morning, intraday) in expected.items():
+        m = _fields(scheduler.get_job(f"ingest:{name}"))
+        i = _fields(scheduler.get_job(f"ingest:{name}:1"))
+        assert (m["hour"], m["minute"]) == morning
+        assert (i["hour"], i["minute"]) == intraday
+
+
+def test_boards_recheck_is_weekly_sunday_0100_utc() -> None:
+    scheduler = _register()
+    f = _fields(scheduler.get_job("boards_recheck"))
+    assert (f["day_of_week"], f["hour"], f["minute"]) == ("sun", "1", "0")
