@@ -4,6 +4,7 @@ from . import adzuna as adzuna
 from . import arbeitnow as arbeitnow
 from . import ashby as ashby
 from . import greenhouse as greenhouse
+from . import internshala as internshala
 from . import jobicy as jobicy
 from . import lever as lever
 from . import remoteok as remoteok

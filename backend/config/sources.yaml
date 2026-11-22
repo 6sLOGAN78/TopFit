@@ -212,3 +212,37 @@ jobicy:
   schedule:
     - {hour: 23, minute: 20, batch: morning}  # 04:50 IST
     - {hour: 11, minute: 20}                  # 16:50 IST
+
+# Internshala (plan 02-16, D-15; ADR 0001): the only scraper. Listing pages only, never detail
+# pages. Rules enforced in code by ranker.ingest.polite.PoliteFetcher and the path guard in
+# sources/internshala.py: honest RankerBot User-Agent; robots.txt fetched at runtime, fail closed
+# if unavailable; at most 1 request per 3 s per host; only /jobs/<category>-jobs/ and
+# /internships/<category>-internship/ (plus /page-N/); no query strings or commas; no login, no
+# CAPTCHA/anti-bot bypass, no proxies or UA rotation; no retry after a 403/429/5xx/challenge (the
+# whole run stops). robots.txt disallows query strings, commas, /job/details/,
+# /internship/details/ and search pages. Only card fields + the Internshala detail URL are stored.
+# Absence expiry is per category scope; a card seen in two categories belongs to the first.
+internshala:
+  enabled: true
+  expiry_policy: absence
+  absence_missed_runs: 2
+  volume_guard: {ratio: 0.5, window: 5, min_history: 2}
+  max_runs_per_day: 4
+  base_url: https://internshala.com
+  min_interval_seconds: 3.0
+  max_pages_per_category: 20
+  job_categories:
+    - python-jobs
+    - software-development-jobs
+    - web-development-jobs
+    - data-science-jobs
+    - java-jobs
+  internship_categories:
+    - python-internship
+    - web-development-internship
+    - software-development-internship
+    - data-science-internship
+    - machine-learning-internship
+  schedule:
+    - {hour: 22, minute: 35, batch: morning}  # 04:05 IST
+    - {hour: 10, minute: 35}                  # 16:05 IST

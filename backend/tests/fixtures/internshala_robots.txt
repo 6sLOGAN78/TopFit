@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /*?*
+Disallow: /*,*
+Disallow: /job/details/
+Disallow: /internship/details/
+Disallow: /search
+Disallow: /login
+Disallow: /student/
