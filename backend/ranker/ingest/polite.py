@@ -2,7 +2,8 @@
 
 Honest RankerBot User-Agent, robots.txt fetched at runtime (fail closed), at most one request per
 ``min_interval_s`` per host, and no retry after a refusal: a 403/429/5xx/challenge latches the host
-for the rest of this fetcher's life. One fixed identity, one direct connection, no cookies kept between requests.
+for the rest of this fetcher's life. One fixed identity, one direct connection, and no cookies
+kept between requests.
 Exception text carries a status or reason only, never a URL.
 """
 
@@ -71,6 +72,11 @@ class PoliteFetcher:
         parts = urlsplit(url)
         return f"{parts.scheme}://{parts.netloc}", parts.netloc
 
+    @staticmethod
+    def _same_origin(resp: httpx.Response, origin: str) -> bool:
+        url = resp.url
+        return f"{url.scheme}://{url.netloc.decode()}" == origin
+
     async def _spaced_get(self, url: str, host: str) -> httpx.Response:
         if self._min_interval > 0 and host in self._last:
             gap = self._clock() - self._last[host]
@@ -79,7 +85,10 @@ class PoliteFetcher:
         self._last[host] = self._clock()
         self.requests_made += 1
         try:
-            return await self._client.get(url, headers={"User-Agent": self._ua})
+            # Redirects are never followed: a Location could point past the robots/path guards.
+            return await self._client.get(
+                url, headers={"User-Agent": self._ua}, follow_redirects=False
+            )
         finally:
             self._client.cookies.clear()  # nothing carried between requests
             self._last[host] = self._clock()
@@ -93,11 +102,11 @@ class PoliteFetcher:
             resp = await self._spaced_get(f"{origin}/robots.txt", host)
             if resp.status_code == 404:
                 verdict = True  # no robots.txt: nothing is disallowed
-            elif resp.status_code < 400:
+            elif resp.status_code < 300 and self._same_origin(resp, origin):
                 parser = RobotFileParser()
                 parser.parse(resp.text.splitlines())
                 verdict = parser
-            # 401/403/5xx and anything else: fail closed
+            # 3xx (never followed), 401/403/5xx and anything else: fail closed
         except httpx.HTTPError:
             verdict = False
         self._robots[origin] = verdict
@@ -113,7 +122,7 @@ class PoliteFetcher:
         return verdict.can_fetch(self._ua, url)
 
     async def get_text(self, url: str) -> str:
-        _, host = self._origin(url)
+        origin, host = self._origin(url)
         if host in self._latched:
             raise FetchRefused("host_refused")
         if not await self.allowed(url):
@@ -124,6 +133,12 @@ class PoliteFetcher:
             self._latched.add(host)
             raise FetchRefused(type(exc).__name__) from None
         status = resp.status_code
+        if 300 <= status < 400:
+            self._latched.add(host)
+            raise FetchRefused("redirect", status)
+        if not self._same_origin(resp, origin):
+            self._latched.add(host)
+            raise FetchRefused("origin_changed", status)
         if status in (403, 429) or status >= 500:
             self._latched.add(host)
             raise FetchRefused("FetchRefused", status)

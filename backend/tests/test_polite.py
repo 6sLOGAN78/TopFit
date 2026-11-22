@@ -136,3 +136,43 @@ async def test_ordinary_challenge_word_in_job_text_is_not_a_refusal() -> None:
     )
     async with httpx.AsyncClient() as client:
         assert "challenges" in await _fetcher(client, Clock()).get_text(f"{HOST}/jobs/python-jobs/")
+
+
+@pytest.mark.parametrize(
+    ("status", "location"),
+    [
+        (301, f"{HOST}/job/details/x1"),
+        (302, "https://evil.example/jobs/python-jobs/"),
+        (302, f"{HOST}/jobs/java-jobs/"),
+    ],
+)
+@respx.mock
+async def test_redirect_is_refused_and_never_followed(status: int, location: str) -> None:
+    respx.get(f"{HOST}/robots.txt").mock(return_value=httpx.Response(200, text=ROBOTS))
+    page = respx.get(f"{HOST}/jobs/python-jobs/").mock(
+        return_value=httpx.Response(status, headers={"location": location})
+    )
+    target = respx.get(location).mock(return_value=httpx.Response(200, text="target"))
+    async with httpx.AsyncClient(follow_redirects=True) as client:  # client default must not matter
+        f = _fetcher(client, Clock())
+        with pytest.raises(FetchRefused) as info:
+            await f.get_text(f"{HOST}/jobs/python-jobs/")
+        assert info.value.status == status
+        with pytest.raises(FetchRefused, match="host_refused"):
+            await f.get_text(f"{HOST}/jobs/web-development-jobs/")
+    if "java-jobs" not in location:
+        assert target.call_count == 0
+    assert page.call_count == 1
+
+
+@respx.mock
+async def test_robots_redirect_fails_closed() -> None:
+    respx.get(f"{HOST}/robots.txt").mock(
+        return_value=httpx.Response(301, headers={"location": "https://evil.example/robots.txt"})
+    )
+    evil = respx.get("https://evil.example/robots.txt").mock(
+        return_value=httpx.Response(200, text="User-agent: *\nAllow: /\n")
+    )
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+        assert not await _fetcher(client, Clock()).allowed(f"{HOST}/jobs/python-jobs/")
+    assert evil.call_count == 0

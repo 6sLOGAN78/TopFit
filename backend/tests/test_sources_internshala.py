@@ -97,7 +97,7 @@ def test_parse_listing_page_jobs() -> None:
 
 def test_parse_listing_page_internship_has_no_experience() -> None:
     page = parse_listing_page(_text("internshala_internships_p1.html"), "internships")
-    assert [c.source_job_id for c in page.cards] == ["2001", "2002"]
+    assert [c.source_job_id for c in page.cards] == ["2001", "2002", "2003"]
     assert all(c.experience is None for c in page.cards)
 
 
@@ -135,10 +135,18 @@ async def test_fetch_two_pages_maps_fields(no_sleep: list[float]) -> None:
     res = a.result()
     assert res.complete_scopes == {"jobs/python-jobs", "internships/python-internship"}
     assert res.failed_scopes == {}
-    assert res.scope_counts == {"jobs/python-jobs": 4, "internships/python-internship": 2}
+    assert res.scope_counts == {"jobs/python-jobs": 4, "internships/python-internship": 3}
     assert res.calls_used == 4  # robots + 3 listing pages
     assert len(no_sleep) == 3 and all(0 < s <= 3.0 for s in no_sleep)
-    assert [j.source_job_id for j in jobs] == ["1001", "1002", "1003", "1004", "2001", "2002"]
+    assert [j.source_job_id for j in jobs] == [
+        "1001",
+        "1002",
+        "1003",
+        "1004",
+        "2001",
+        "2002",
+        "2003",
+    ]
     by = {j.source_job_id: j for j in jobs}
     j1 = by["1001"]
     assert j1.source_scope == "jobs/python-jobs" and j1.country_hint == "IN"
@@ -150,6 +158,7 @@ async def test_fetch_two_pages_maps_fields(no_sleep: list[float]) -> None:
     assert by["1002"].workplace_hint == "remote" and by["1002"].location_text is None
     assert by["1003"].employment_type_hint == "part_time" and by["1003"].salary_text is None
     assert by["1004"].posted_at == NOW - timedelta(days=30)
+    assert by["1001"].category_hint == "software development"
     assert by["2001"].employment_type_hint == "internship"
     assert by["2001"].source_scope == "internships/python-internship"
     assert by["2002"].workplace_hint == "remote" and by["2002"].salary_text is None

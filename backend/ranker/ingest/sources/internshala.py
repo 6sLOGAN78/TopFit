@@ -329,6 +329,19 @@ def parse_age(text: str | None, now: datetime) -> datetime | None:
     return now - timedelta(days=days)
 
 
+def category_hint_for(category: str) -> str:
+    """Every configured listing category is a tech one; map it to a scope.yaml tech category.
+
+    Internshala titles are often role names without an engineer/developer word ("Web Development"),
+    so the title alone would reject them. The exclude list still wins for non-tech titles.
+    """
+    if "data-science" in category:
+        return "data"
+    if "machine-learning" in category:
+        return "artificial intelligence"
+    return "software development"
+
+
 def card_to_raw(card: ParsedCard, kind: Kind, category: str, now: datetime) -> RawJob:
     is_wfh = any(WFH_RE.search(loc) for loc in card.locations)
     places = [loc for loc in card.locations if not WFH_RE.search(loc)]
@@ -357,6 +370,7 @@ def card_to_raw(card: ParsedCard, kind: Kind, category: str, now: datetime) -> R
         description_is_html=False,
         location_text=", ".join(places) or None,
         location_parts=places,
+        category_hint=category_hint_for(category),
         country_hint="IN",
         region_hint="India",
         workplace_hint="remote" if is_wfh else None,
