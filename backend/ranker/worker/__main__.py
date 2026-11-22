@@ -15,7 +15,13 @@ from ranker.observability import configure_logging
 from ranker.settings import get_settings
 from ranker.tasks.consumer import consume_tasks
 from ranker.tasks.handlers import build_handlers
-from ranker.worker.scheduler import build_scheduler, register_core_jobs, try_acquire_leader
+from ranker.worker.scheduler import (
+    build_scheduler,
+    reap_abandoned_runs,
+    register_core_jobs,
+    register_source_jobs,
+    try_acquire_leader,
+)
 
 
 async def run(stop: asyncio.Event | None = None) -> None:
@@ -27,6 +33,12 @@ async def run(stop: asyncio.Event | None = None) -> None:
     settings = get_settings()
     heartbeat = settings.worker_heartbeat_seconds
     engine = create_engine_from_settings(settings)
+    try:
+        # Fail at start (not silently inside the leader loop) on a bad schedule config.
+        register_source_jobs(build_scheduler(), engine, settings)
+    except BaseException:
+        await engine.dispose()
+        raise
     log.info("worker_started")
 
     consumer = asyncio.create_task(
@@ -64,6 +76,8 @@ async def run(stop: asyncio.Event | None = None) -> None:
                 if lock_conn is not None:
                     scheduler = build_scheduler()
                     register_core_jobs(scheduler, engine, settings)
+                    register_source_jobs(scheduler, engine, settings)
+                    await reap_abandoned_runs(engine)
                     scheduler.start()  # pyright: ignore[reportUnknownMemberType]
                     announced_follower = False
                     log.info("scheduler_lock_acquired")

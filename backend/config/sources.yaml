@@ -1,3 +1,19 @@
+# D-17 morning-read stagger table (UTC; IST = UTC+5:30, no DST). Every enabled source has exactly
+# one `batch: morning` entry starting in 21:30-00:00 UTC (checked by the worker at start), so the
+# batch finishes before ~01:00 UTC (06:30 IST). Absence-policy sources add one intraday run so a
+# closed job misses 2 complete runs and leaves the same day. Plans 02-14/02-16 copy their rows.
+#   source       morning UTC (IST)       intraday UTC (IST)
+#   greenhouse   22:00 (03:30)           10:00 (15:30)
+#   lever        22:15 (03:45)           10:15 (15:45)
+#   ashby        22:25 (03:55)           10:25 (15:55)
+#   internshala  22:35 (04:05)           10:35 (16:05)
+#   arbeitnow    23:05 (04:35)           11:05 (16:35)
+#   remoteok     23:15 (04:45)           11:15 (16:45)
+#   jobicy       23:20 (04:50)           11:20 (16:50)
+#   remotive     23:30 (05:00)           11:30 (17:00)
+#   adzuna       23:40 (05:10)           none (ttl policy; enabled: false while ADR 0001 budget is 0)
+# Sweeps (worker/scheduler.py): TTL sweep 00:30 UTC (06:00 IST); enrich backlog 01:30 UTC (07:00 IST).
+#
 # Expiry thresholds (plan 02-11, ING-08), read by ranker.ingest.expiry.ExpiryConfig:
 #   absence_missed_runs: a full-feed job expires after missing this many COMPLETE runs of its scope
 #     (2, per ING-08; the morning + intraday schedule means two runs happen within a day).
@@ -22,7 +38,7 @@ remotive:
 # SET FROM ADR 0001: no paid plan is active (25 test calls only), so calls_per_day is 0 and the
 # adapter makes no calls; enabled stays false until a plan exists. Then set calls_per_day to at
 # most 0.8 x the daily quota, calls_per_month to min(monthly quota, 31 x calls_per_day), and
-# flip enabled to true. Schedule is UTC: 22:00 UTC is 03:30 IST.
+# flip enabled to true. Schedule is UTC: 23:40 UTC is 05:10 IST (D-17 morning batch).
 adzuna:
   enabled: false
   expiry_policy: ttl
@@ -41,4 +57,4 @@ adzuna:
     - {name: data_ml, what_or: "data scientist machine learning analytics engineer", sort_by: date, max_days_old: 2, max_pages: 5}
   backfill: {auto: true, max_days_old: 30, max_pages: 200}
   schedule:
-    - {hour: 22, minute: 0}
+    - {hour: 23, minute: 40, batch: morning}
