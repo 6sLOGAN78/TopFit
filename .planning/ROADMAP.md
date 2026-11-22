@@ -117,7 +117,7 @@ Plans:
      - runnable against the fake provider in tests
 
      Background jobs enqueued in `tasks` are picked up by the worker exactly once, using `SKIP LOCKED`.
-**Plans:** 16/17 plans executed
+**Plans:** 16/18 plans executed
 
 Plans:
 **Wave 1**
@@ -169,6 +169,10 @@ Plans:
 **Wave 11** *(blocked on Wave 10 completion)*
 
 - [ ] 02-15-PLAN.md — Production secrets, one-off-container backfill of all free sources, morning-read check, eval label review and ING-12 verdict against 1500 in ADR 0001 (owner checkpoints)
+
+**Wave 12** *(gap closure; blocked on 02-14 and 02-16)*
+
+- [ ] 02-18-PLAN.md — Gap closure: board-drop expiry with guarded age fallback, one-board-at-a-time ingest memory bound (Greenhouse OOM risk), cheap readyz + hidden SQL params (CR-01/WR-04), Lever/Ashby display names, Jobicy geo validation, ECB FX refresh (ING-08, ING-13, NORM-04, OPS-02, OPS-04, SEC-07)
 
 **Research**: Yes. Run `/gsd:plan-phase --research-phase 2`: live Adzuna quota, `results_per_page`/`max_days_old`/`sort_by`, ToS on storing descriptions; Greenhouse/Lever board APIs as a fallback volume source.
 
