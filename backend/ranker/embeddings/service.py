@@ -37,8 +37,11 @@ def job_embedding_text(
     )
 
 
-def _vector_literal(vec: Sequence[float]) -> str:
+def vector_literal(vec: Sequence[float]) -> str:
     return "[" + ",".join(repr(float(x)) for x in vec) + "]"
+
+
+_vector_literal = vector_literal  # backwards-compatible alias
 
 
 _SELECT = text(
@@ -83,7 +86,7 @@ async def embed_missing(
         async with engine.begin() as conn:
             for r, vec in zip(rows, vectors, strict=True):
                 res = await conn.execute(
-                    _UPDATE, {"v": _vector_literal(vec), "m": model_name, "id": r["id"]}
+                    _UPDATE, {"v": vector_literal(vec), "m": model_name, "id": r["id"]}
                 )
                 written += res.rowcount
         total += written
