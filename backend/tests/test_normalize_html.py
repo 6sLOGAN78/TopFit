@@ -1,3 +1,5 @@
+import time
+
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
@@ -101,3 +103,10 @@ def test_never_raises_and_no_nbsp(raw: str) -> None:
 def test_unclosed_dangerous_tag_content_dropped(tag: str) -> None:
     out = clean_description(f"<p>safe</p><{tag}>evil()", is_html=True)
     assert "evil" not in out
+
+
+@pytest.mark.parametrize("unit", ["<p", "<br", "<li", "</p"])
+def test_unterminated_openers_are_linear(unit: str) -> None:
+    start = time.perf_counter()
+    clean_description(unit * (100_000 // len(unit)), is_html=True)
+    assert time.perf_counter() - start < 1.0

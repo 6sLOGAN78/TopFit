@@ -11,10 +11,10 @@ import nh3
 
 MAX_INPUT_CHARS = 200_000
 
-_BLOCK_CLOSE = re.compile(r"</\s*(?:p|div|h[1-6]|tr|ul|ol|table|section|article)\b[^>]*>", re.I)
-_BLOCK_OPEN = re.compile(r"<\s*(?:p|div|h[1-6]|tr|ul|ol|table|section|article)\b[^>]*>", re.I)
-_BREAK = re.compile(r"<\s*br\b[^>]*/?>", re.I)
-_LI_OPEN = re.compile(r"<\s*li\b[^>]*>", re.I)
+_BLOCK_CLOSE = re.compile(r"</\s*(?:p|div|h[1-6]|tr|ul|ol|table|section|article)\b[^<>]*>", re.I)
+_BLOCK_OPEN = re.compile(r"<\s*(?:p|div|h[1-6]|tr|ul|ol|table|section|article)\b[^<>]*>", re.I)
+_BREAK = re.compile(r"<\s*br\b[^<>]*/?>", re.I)
+_LI_OPEN = re.compile(r"<\s*li\b[^<>]*>", re.I)
 _HSPACE = re.compile(r"[ \t\r\f\v]+")
 _BLANKS = re.compile(r"\n{3,}")
 
