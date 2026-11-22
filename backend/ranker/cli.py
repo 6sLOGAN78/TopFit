@@ -6,17 +6,26 @@ Exit codes for ``ingest``: 0 succeeded or partial; 1 failed; 2 unknown source / 
 
 import asyncio
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from functools import partial
+from pathlib import Path
 from typing import Annotated, Literal
 
 import anyio.to_thread
 import typer
+from sqlalchemy import text
 
 from ranker.config_loader import load_config
 from ranker.db.engine import create_engine_from_settings
 from ranker.embeddings.embedder import build_embedder
 from ranker.embeddings.service import embed_missing, invalidate_other_models
+from ranker.evals.ingest_eval import (
+    EvalSetError,
+    capture_samples,
+    load_eval_set,
+    report_markdown,
+    score_normalisation,
+)
 from ranker.ingest.boards import boards_report, run_board_maintenance
 from ranker.ingest.expiry import ExpiryConfig, expire_ttl, purge_source
 from ranker.ingest.pipeline import (
@@ -32,6 +41,14 @@ from ranker.settings import get_settings
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 boards_app = typer.Typer(no_args_is_help=True, add_completion=False, help="Public ATS boards.")
 app.add_typer(boards_app, name="boards")
+eval_app = typer.Typer(no_args_is_help=True, add_completion=False, help="Offline evaluations.")
+app.add_typer(eval_app, name="eval")
+runs_app = typer.Typer(no_args_is_help=True, add_completion=False, help="Ingest run quality.")
+app.add_typer(runs_app, name="runs")
+
+DEFAULT_EVAL_FIXTURE = (
+    Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "ingest_eval" / "postings.jsonl"
+)
 
 EXIT_FAILED = 1
 EXIT_USAGE = 2
@@ -168,6 +185,38 @@ async def _boards_discover() -> int:
     return 0
 
 
+async def _runs_report(since_hours: int) -> int:
+    engine = create_engine_from_settings(get_settings())
+    since = datetime.now(UTC) - timedelta(hours=since_hours)
+    try:
+        async with engine.connect() as conn:
+            rows = await conn.execute(
+                text(
+                    "SELECT source, status, started_at, finished_at, fetched, in_scope, inserted, "
+                    "updated, expired AS closed, duplicates_grouped, ghost_flagged, reposts "
+                    "FROM ingest_runs WHERE started_at >= :since ORDER BY started_at, id"
+                ),
+                {"since": since},
+            )
+            result = [dict(r._mapping) for r in rows]  # pyright: ignore[reportPrivateUsage]
+    finally:
+        await engine.dispose()
+    for row in result:
+        typer.echo(json.dumps(row, default=str))
+    return 0
+
+
+async def _eval_capture(source: str, n: int, out: Path) -> int:
+    settings = get_settings()
+    engine = create_engine_from_settings(settings)
+    try:
+        written = await capture_samples(engine, settings, source, n, out)
+    finally:
+        await engine.dispose()
+    typer.echo(json.dumps({"source": source, "written": written, "out": str(out)}))
+    return 0
+
+
 @app.callback()
 def main() -> None:
     """Ranker operator commands."""
@@ -250,6 +299,50 @@ def boards_discover_cmd() -> None:
     """Run board discovery plus the weekly re-check and print the summary."""
     configure_logging(get_settings().log_level)
     raise typer.Exit(asyncio.run(_boards_discover()))
+
+
+@eval_app.command("ingest")
+def eval_ingest_cmd(
+    fixture: Annotated[Path, typer.Option(help="Labelled postings JSONL")] = DEFAULT_EVAL_FIXTURE,
+    markdown: Annotated[bool, typer.Option("--markdown", help="Print a markdown table")] = False,
+) -> None:
+    """Score normalize_job against the gold labels (no network, no LLM)."""
+    if not fixture.is_file():
+        typer.echo(json.dumps({"error": "FixtureNotFound", "path": str(fixture)}), err=True)
+        raise typer.Exit(EXIT_USAGE)
+    try:
+        report = score_normalisation(load_eval_set(fixture))
+    except EvalSetError as exc:
+        typer.echo(json.dumps({"error": "InvalidFixture", "detail": str(exc)}), err=True)
+        raise typer.Exit(EXIT_USAGE) from None
+    typer.echo(report_markdown(report) if markdown else report.model_dump_json())
+
+
+@eval_app.command("capture")
+def eval_capture_cmd(
+    source: Annotated[str, typer.Argument(help="Source name, e.g. greenhouse")],
+    n: Annotated[int, typer.Option(min=1, max=200)] = 10,
+    out: Annotated[Path, typer.Option(help="JSONL to append unlabelled records to")] = (
+        DEFAULT_EVAL_FIXTURE
+    ),
+) -> None:
+    """Fetch SOURCE once through its adapter and append N scrubbed, unlabelled postings."""
+    try:
+        get_adapter_factory(source)
+    except UnknownSource:
+        typer.echo(json.dumps({"source": source, "error": "UnknownSource"}), err=True)
+        raise typer.Exit(EXIT_USAGE) from None
+    configure_logging(get_settings().log_level)
+    raise typer.Exit(asyncio.run(_eval_capture(source, n, out)))
+
+
+@runs_app.command("report")
+def runs_report_cmd(
+    since_hours: Annotated[int, typer.Option(min=1)] = 24,
+) -> None:
+    """Print one JSON line per recent ingest run with the D-20 quality counters."""
+    configure_logging(get_settings().log_level)
+    raise typer.Exit(asyncio.run(_runs_report(since_hours)))
 
 
 if __name__ == "__main__":
