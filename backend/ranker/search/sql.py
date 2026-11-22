@@ -236,7 +236,7 @@ HYDRATE_SQL = text(
     "j.country_code, j.remote_type, j.remote_eligibility, j.onsite_days_per_week, "
     "j.seniority, j.employment_type, j.salary_min_inr_annual, j.salary_max_inr_annual, "
     "j.salary_is_estimate, j.skills, j.ghost_reasons, j.posted_at, j.first_seen_at, "
-    "j.last_seen_at "
+    "j.last_seen_at, j.company_id, c.normalized_name AS company_key "
     "FROM jobs j LEFT JOIN companies c ON c.id = j.company_id "
     "WHERE j.id = ANY(CAST(:ids AS bigint[])) AND j.status = 'active'"
 )
