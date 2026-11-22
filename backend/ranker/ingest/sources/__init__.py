@@ -1,5 +1,6 @@
 """Source adapter registry. Adapter modules are imported explicitly for registration."""
 
+from . import remotive as remotive
 from .base import (
     AdapterContext,
     AdapterFactory,
