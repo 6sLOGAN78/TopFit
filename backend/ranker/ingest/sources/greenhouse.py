@@ -41,7 +41,7 @@ def _names(value: object, key: str) -> list[str]:
     return out
 
 
-def _to_raw(item: dict[str, Any], slug: str) -> RawJob:
+def _to_raw(item: dict[str, Any], slug: str, *, company_name: str | None = None) -> RawJob:
     location: Any = item.get("location")
     location_text = (
         s(cast(dict[str, Any], location).get("name")) if isinstance(location, dict) else None
@@ -57,7 +57,7 @@ def _to_raw(item: dict[str, Any], slug: str) -> RawJob:
         source_scope=slug,
         url=item["absolute_url"],
         title=item["title"],
-        company_name=s(item.get("company_name")) or company_from_slug(slug),
+        company_name=s(item.get("company_name")) or company_name or company_from_slug(slug),
         description_raw=content or "",
         description_is_html=content is not None,
         description_entity_escaped=content is not None,
@@ -68,7 +68,9 @@ def _to_raw(item: dict[str, Any], slug: str) -> RawJob:
     )
 
 
-def parse_board(payload: object, slug: str) -> tuple[list[RawJob], int]:
+def parse_board(
+    payload: object, slug: str, *, company_name: str | None = None
+) -> tuple[list[RawJob], int]:
     jobs: list[RawJob] = []
     invalid = 0
     items: Any = cast(dict[str, Any], payload).get("jobs") if isinstance(payload, dict) else None
@@ -78,7 +80,7 @@ def parse_board(payload: object, slug: str) -> tuple[list[RawJob], int]:
         try:
             if not isinstance(item, dict):
                 raise TypeError
-            jobs.append(_to_raw(cast(dict[str, Any], item), slug))
+            jobs.append(_to_raw(cast(dict[str, Any], item), slug, company_name=company_name))
         except KeyError, TypeError, ValueError, ValidationError:
             invalid += 1
     return jobs, invalid
@@ -102,7 +104,8 @@ class GreenhouseAdapter(BoardAdapter):
         return board_request(board.slug)
 
     def parse(self, payload: object, slug: str) -> tuple[list[RawJob], int]:
-        return parse_board(payload, slug)
+        # Precedence: payload company_name, then configured display name, then the slug.
+        return parse_board(payload, slug, company_name=self._cfg.company_names.get(slug))
 
 
 def _factory(ctx: AdapterContext) -> SourceAdapter:

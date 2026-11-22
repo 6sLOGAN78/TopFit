@@ -62,7 +62,7 @@ def _salary(item: dict[str, Any]) -> tuple[float | None, float | None, str | Non
     return None, None, None, None
 
 
-def _to_raw(item: dict[str, Any], slug: str) -> RawJob | None:
+def _to_raw(item: dict[str, Any], slug: str, *, company_name: str | None = None) -> RawJob | None:
     if item.get("isListed") is False:
         return None
     workplace = _WORKPLACE.get((s(item.get("workplaceType")) or "").lower())
@@ -95,7 +95,7 @@ def _to_raw(item: dict[str, Any], slug: str) -> RawJob | None:
         source_scope=slug,
         url=item["jobUrl"],
         title=item["title"],
-        company_name=company_from_slug(slug),
+        company_name=company_name or company_from_slug(slug),
         description_raw=plain or html or "",
         description_is_html=plain is None and html is not None,
         location_text=primary,
@@ -112,7 +112,9 @@ def _to_raw(item: dict[str, Any], slug: str) -> RawJob | None:
     )
 
 
-def parse_board(payload: object, slug: str) -> tuple[list[RawJob], int]:
+def parse_board(
+    payload: object, slug: str, *, company_name: str | None = None
+) -> tuple[list[RawJob], int]:
     jobs: list[RawJob] = []
     invalid = 0
     items: Any = cast(dict[str, Any], payload).get("jobs") if isinstance(payload, dict) else None
@@ -122,7 +124,7 @@ def parse_board(payload: object, slug: str) -> tuple[list[RawJob], int]:
         try:
             if not isinstance(item, dict):
                 raise TypeError
-            raw = _to_raw(cast(dict[str, Any], item), slug)
+            raw = _to_raw(cast(dict[str, Any], item), slug, company_name=company_name)
         except KeyError, TypeError, ValueError, ValidationError:
             invalid += 1
             continue
@@ -149,7 +151,7 @@ class AshbyAdapter(BoardAdapter):
         return board_request(board.slug)
 
     def parse(self, payload: object, slug: str) -> tuple[list[RawJob], int]:
-        return parse_board(payload, slug)
+        return parse_board(payload, slug, company_name=self._cfg.company_names.get(slug))
 
 
 def _factory(ctx: AdapterContext) -> SourceAdapter:

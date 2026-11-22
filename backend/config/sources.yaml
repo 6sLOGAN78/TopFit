@@ -96,6 +96,22 @@ greenhouse:
     - datadog
     - airbnb
     - figma
+  # display names used when the board payload has none; discovered boards fall back to
+  # the title-cased slug
+  company_names:
+    groww: Groww
+    gitlab: GitLab
+    canonical: Canonical
+    druva: Druva
+    turing: Turing
+    databricks: Databricks
+    stripe: Stripe
+    cloudflare: Cloudflare
+    elastic: Elastic
+    mongodb: MongoDB
+    datadog: Datadog
+    airbnb: Airbnb
+    figma: Figma
   india_candidates:
     - groww
     - zerodha
@@ -151,6 +167,14 @@ lever:
     - paytm
     - zeta
     - mindtickle
+  # display names used when the board payload has none; discovered boards fall back to
+  # the title-cased slug
+  company_names:
+    cred: CRED
+    meesho: Meesho
+    paytm: Paytm
+    zeta: Zeta
+    mindtickle: MindTickle
 ashby:
   enabled: true
   expiry_policy: absence
@@ -173,6 +197,17 @@ ashby:
     - posthog
     - replit
     - sarvam
+  # display names used when the board payload has none; discovered boards fall back to
+  # the title-cased slug
+  company_names:
+    ramp: Ramp
+    notion: Notion
+    openai: OpenAI
+    linear: Linear
+    supabase: Supabase
+    posthog: PostHog
+    replit: Replit
+    sarvam: Sarvam AI
 
 # Free remote-job APIs (plan 02-16, D-14/D-16; ADR 0001). All times UTC (IST = UTC+5:30).
 # himalayas: not ingested; 0 of 20 sampled postings were India-eligible (ADR 0001).
@@ -205,8 +240,11 @@ remoteok:
     - {hour: 23, minute: 15, batch: morning}  # 04:45 IST
     - {hour: 11, minute: 15}                  # 16:45 IST
 
-# Jobicy: capped latest-N window, TTL expiry. No geo filter: geo=india returned HTTP 400 on
-# 2026-11-22. Attribution: credit Jobicy and link to its `url`.
+# Jobicy: capped latest-N window, TTL expiry. No geo filter: Jobicy documents only location slugs
+# such as usa, europe, apac, canada (no India slug, hence the HTTP 400 for geo=india on
+# 2026-11-22), and apac would drop the worldwide-remote postings that are the main India-eligible
+# ones. `geo`, if set, must be one of apac/usa/canada/europe; `count` is 1-100. Attribution:
+# credit Jobicy and link to its `url`.
 jobicy:
   enabled: true
   expiry_policy: ttl

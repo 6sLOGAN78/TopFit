@@ -76,7 +76,7 @@ def _description(item: dict[str, Any]) -> tuple[str, bool]:
     return "".join(html_parts), True
 
 
-def _to_raw(item: dict[str, Any], slug: str) -> RawJob:
+def _to_raw(item: dict[str, Any], slug: str, *, company_name: str | None = None) -> RawJob:
     cats_raw: Any = item.get("categories")
     cats: dict[str, Any] = cast(dict[str, Any], cats_raw) if isinstance(cats_raw, dict) else {}
     all_locations: Any = cats.get("allLocations")
@@ -104,7 +104,7 @@ def _to_raw(item: dict[str, Any], slug: str) -> RawJob:
         source_scope=slug,
         url=item["hostedUrl"],
         title=item["text"],
-        company_name=company_from_slug(slug),
+        company_name=company_name or company_from_slug(slug),
         description_raw=description,
         description_is_html=is_html,
         location_text=s(cats.get("location")),
@@ -121,7 +121,9 @@ def _to_raw(item: dict[str, Any], slug: str) -> RawJob:
     )
 
 
-def parse_board(payload: object, slug: str) -> tuple[list[RawJob], int]:
+def parse_board(
+    payload: object, slug: str, *, company_name: str | None = None
+) -> tuple[list[RawJob], int]:
     jobs: list[RawJob] = []
     invalid = 0
     if not isinstance(payload, list):
@@ -130,7 +132,7 @@ def parse_board(payload: object, slug: str) -> tuple[list[RawJob], int]:
         try:
             if not isinstance(item, dict):
                 raise TypeError
-            jobs.append(_to_raw(cast(dict[str, Any], item), slug))
+            jobs.append(_to_raw(cast(dict[str, Any], item), slug, company_name=company_name))
         except KeyError, TypeError, ValueError, ValidationError:
             invalid += 1
     return jobs, invalid
@@ -154,7 +156,7 @@ class LeverAdapter(BoardAdapter):
         return board_request(board.slug, board.host)
 
     def parse(self, payload: object, slug: str) -> tuple[list[RawJob], int]:
-        return parse_board(payload, slug)
+        return parse_board(payload, slug, company_name=self._cfg.company_names.get(slug))
 
     def payload_ok(self, payload: object) -> bool:
         return isinstance(payload, list)

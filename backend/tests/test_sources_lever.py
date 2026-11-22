@@ -184,3 +184,33 @@ async def test_empty_registry_seeds_and_end_to_end(engine: AsyncEngine) -> None:
     assert "Collections Manager" not in titles  # non-tech
     assert summary.skipped == 2
     assert [b.slug for b in await boards_report(engine)] == ["acme"]
+
+
+# --- display names (plan 02-18) ---------------------------------------------------------------
+
+
+def test_configured_company_name_and_slug_fallback() -> None:
+    jobs, _ = parse_board(_payload(), "sarvam", company_name="Sarvam AI")
+    assert jobs and {j.company_name for j in jobs} == {"Sarvam AI"}
+    jobs, _ = parse_board(_payload(), "sarvam")
+    assert {j.company_name for j in jobs} == {"Sarvam"}
+
+
+@pytest.mark.usefixtures("clean_db")
+async def test_adapter_uses_configured_company_names(engine: AsyncEngine) -> None:
+    async def sleep(_: float) -> None:
+        return None
+
+    get_settings.cache_clear()
+    ctx = AdapterContext(
+        settings=get_settings(),
+        engine=engine,
+        config=BoardsConfig(seeds=["acme"], company_names={"acme": "ACME Corp"}),
+        mode="incremental",
+        now=datetime.now(UTC),
+    )
+    adapter = LeverAdapter(ctx, sleep=sleep)
+    with respx.mock(assert_all_called=True) as router:
+        router.get(ACME).mock(return_value=httpx.Response(200, json=_payload()))
+        jobs = await _collect(adapter)
+    assert jobs and {j.company_name for j in jobs} == {"ACME Corp"}

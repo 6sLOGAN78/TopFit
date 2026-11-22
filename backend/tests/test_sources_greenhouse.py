@@ -131,3 +131,16 @@ async def test_empty_registry_seeds_and_dropped_not_resurrected(engine: AsyncEng
         route = router.get(ACME).mock(return_value=httpx.Response(200, json=_payload()))
         assert await _collect(adapter) == []
         assert not route.called
+
+
+def test_company_name_precedence() -> None:
+    payload = _payload()
+    first = payload["jobs"][0]
+    assert first["company_name"] == "Acme Corp"
+    jobs, _ = parse_board(payload, "acme", company_name="Configured Co")
+    by_id = {j.source_job_id: j for j in jobs}
+    assert by_id[str(first["id"])].company_name == "Acme Corp"  # payload wins
+    others = [j for j in jobs if j.source_job_id != str(first["id"])]
+    assert others and {j.company_name for j in others} == {"Configured Co"}
+    jobs, _ = parse_board(payload, "acme-labs")
+    assert {j.company_name for j in jobs if j.source_job_id != str(first["id"])} == {"Acme Labs"}

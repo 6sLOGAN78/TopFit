@@ -8,10 +8,12 @@ import pytest
 import respx
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from ranker.config_loader import clear_config_cache, load_config
 from ranker.ingest.boards import BoardsConfig, boards_report
 from ranker.ingest.sources import ashby
 from ranker.ingest.sources.ashby import AshbyAdapter, parse_board
-from ranker.ingest.sources.base import AdapterContext, RawJob
+from ranker.ingest.sources.base import AdapterContext, RawJob, SourcesConfig
+from ranker.ingest.sources.boardbase import board_company_name
 from ranker.settings import Settings, get_settings
 
 FIXTURE = Path(__file__).parent / "fixtures" / "ashby_board.json"
@@ -175,3 +177,59 @@ async def test_invalid_payload_is_failed_scope(engine: AsyncEngine) -> None:
         await _collect(adapter)
     assert adapter.result().failed_scopes == {"acme": "InvalidPayload:None"}
     assert adapter.result().complete_scopes == set()
+
+
+# --- display names (plan 02-18) ---------------------------------------------------------------
+
+
+def test_configured_company_name_and_slug_fallback() -> None:
+    jobs, _ = parse_board(_payload(), "sarvam", company_name="Sarvam AI")
+    assert jobs and {j.company_name for j in jobs} == {"Sarvam AI"}
+    jobs, _ = parse_board(_payload(), "acme-labs")
+    assert {j.company_name for j in jobs} == {"Acme Labs"}
+
+
+@pytest.mark.usefixtures("clean_db")
+async def test_adapter_uses_configured_company_names(engine: AsyncEngine) -> None:
+    async def sleep(_: float) -> None:
+        return None
+
+    ctx = AdapterContext(
+        settings=_settings(),
+        engine=engine,
+        config=BoardsConfig(seeds=["acme"], company_names={"acme": "ACME Corp"}),
+        mode="incremental",
+        now=datetime.now(UTC),
+    )
+    adapter = AshbyAdapter(ctx, sleep=sleep)
+    with respx.mock(assert_all_called=True) as router:
+        router.get(ACME).mock(return_value=httpx.Response(200, json=_payload()))
+        jobs = await _collect(adapter)
+    assert jobs and {j.company_name for j in jobs} == {"ACME Corp"}
+
+
+def test_sources_yaml_company_names_cover_seeds() -> None:
+    clear_config_cache()
+    sections = load_config("sources.yaml", SourcesConfig).root
+    for ats in ("greenhouse", "lever", "ashby"):
+        cfg = BoardsConfig.model_validate(sections[ats].model_dump())
+        assert set(cfg.company_names) >= set(cfg.seeds), ats
+    ashby_cfg = BoardsConfig.model_validate(sections["ashby"].model_dump())
+    assert ashby_cfg.company_names["sarvam"] == "Sarvam AI"
+
+
+def test_company_names_sanitised() -> None:
+    cfg = BoardsConfig(
+        company_names={
+            "ok": "  Okay Inc  ",
+            "../bad": "Bad",
+            "Upper": "Bad",
+            "empty": "   ",
+            "long": "x" * 81,
+            "ctrl": "Evil\nCorp",
+            "max": "y" * 80,
+        }
+    )
+    assert cfg.company_names == {"ok": "Okay Inc", "max": "y" * 80}
+    assert board_company_name("ok", cfg.company_names) == "Okay Inc"
+    assert board_company_name("acme-labs", cfg.company_names) == "Acme Labs"
