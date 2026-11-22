@@ -6,10 +6,11 @@ Exit codes for ``ingest``: 0 succeeded or partial; 1 failed; 2 unknown source / 
 
 import asyncio
 import json
+import subprocess
 from datetime import UTC, datetime, timedelta
 from functools import partial
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 
 import anyio.to_thread
 import typer
@@ -26,6 +27,16 @@ from ranker.evals.ingest_eval import (
     report_markdown,
     score_normalisation,
 )
+from ranker.evals.ranking_eval import (
+    VARIANTS,
+    RankingEvalError,
+    Variant,
+    check_gate,
+    load_judgments,
+    load_personas,
+    run_ranking_eval,
+)
+from ranker.evals.ranking_eval import report_markdown as ranking_markdown
 from ranker.ingest.boards import boards_report, run_board_maintenance
 from ranker.ingest.expiry import ExpiryConfig, expire_ttl, purge_source
 from ranker.ingest.pipeline import (
@@ -49,6 +60,10 @@ app.add_typer(runs_app, name="runs")
 DEFAULT_EVAL_FIXTURE = (
     Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "ingest_eval" / "postings.jsonl"
 )
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+EVAL_DATA_DIR = REPO_ROOT / "evals" / "data"
+EVAL_RESULTS_DIR = REPO_ROOT / "evals" / "results"
 
 EXIT_FAILED = 1
 EXIT_USAGE = 2
@@ -217,6 +232,67 @@ async def _eval_capture(source: str, n: int, out: Path) -> int:
     return 0
 
 
+def _git_short_sha() -> str:
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],  # noqa: S607
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=5,
+            cwd=REPO_ROOT,
+        )
+    except OSError, subprocess.SubprocessError:
+        return "nogit"
+    return out.stdout.strip() or "nogit"
+
+
+def _write_result(out_dir: Path, stamp: str, payload: dict[str, object]) -> Path:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / f"{stamp}_{_git_short_sha()}.json"
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    return path
+
+
+async def _eval_ranking(
+    personas_path: Path,
+    judgments_path: Path,
+    as_of: datetime,
+    variant: str,
+    baseline: Path | None,
+    max_drop: float,
+    ranking_config_path: Path | None,
+    out_dir: Path,
+) -> int:
+    personas = load_personas(personas_path)
+    judgments = load_judgments(judgments_path)
+    settings = get_settings()
+    engine = create_engine_from_settings(settings)
+    try:
+        embedder = await anyio.to_thread.run_sync(partial(build_embedder, settings))
+        report = await run_ranking_eval(
+            engine,
+            embedder,
+            settings,
+            personas,
+            judgments,
+            as_of=as_of,
+            variant=cast(Variant, variant),
+            ranking_config_path=ranking_config_path,
+        )
+    finally:
+        await engine.dispose()
+    gate = check_gate(report, baseline, max_drop)
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    payload = {"timestamp": stamp, "report": report.model_dump(mode="json"), **gate.as_json()}
+    await anyio.to_thread.run_sync(_write_result, out_dir, stamp, payload)
+    typer.echo(ranking_markdown(report))
+    if gate.status == "no_baseline":
+        typer.echo("notice: no baseline found, gate skipped")
+    typer.echo(json.dumps(gate.as_json()))
+    return EXIT_FAILED if gate.status == "fail" else 0
+
+
 @app.callback()
 def main() -> None:
     """Ranker operator commands."""
@@ -334,6 +410,65 @@ def eval_capture_cmd(
         raise typer.Exit(EXIT_USAGE) from None
     configure_logging(get_settings().log_level)
     raise typer.Exit(asyncio.run(_eval_capture(source, n, out)))
+
+
+@eval_app.command("ranking")
+def eval_ranking_cmd(
+    personas: Annotated[Path, typer.Option(help="Personas JSONL")] = EVAL_DATA_DIR
+    / "personas.jsonl",
+    judgments: Annotated[Path, typer.Option(help="Graded judgments JSONL")] = EVAL_DATA_DIR
+    / "judgments.jsonl",
+    as_of: Annotated[
+        str | None, typer.Option(help="ISO timestamp; default from snapshot.meta.json")
+    ] = None,
+    baseline: Annotated[Path | None, typer.Option(help="baseline.json to gate against")] = None,
+    max_drop: Annotated[float, typer.Option(min=0.0, help="Max allowed nDCG@10 drop")] = 0.02,
+    ranking_config: Annotated[
+        Path | None, typer.Option(help="Alternative ranking.yaml to evaluate (D-12)")
+    ] = None,
+    out: Annotated[Path, typer.Option(help="Directory for the result JSON")] = EVAL_RESULTS_DIR,
+    variant: Annotated[
+        str, typer.Option(help="lex | vec | hybrid | hybrid_signals")
+    ] = "hybrid_signals",
+    mode: Annotated[str, typer.Option(help="Only no-llm is supported")] = "no-llm",
+) -> None:
+    """Score the production search path against graded judgments (no LLM, exact vectors)."""
+
+    def usage(error: str, **extra: str) -> typer.Exit:
+        typer.echo(json.dumps({"error": error, **extra}), err=True)
+        return typer.Exit(EXIT_USAGE)
+
+    if mode != "no-llm":
+        raise usage("UnsupportedMode", mode=mode)
+    if variant not in VARIANTS:
+        raise usage("UnknownVariant", variant=variant)
+    for path in (personas, judgments):
+        if not path.is_file():
+            raise usage("FileNotFound", path=str(path))
+    if ranking_config is not None and not ranking_config.is_file():
+        raise usage("FileNotFound", path=str(ranking_config))
+    as_of_text = as_of
+    if as_of_text is None:
+        meta = EVAL_DATA_DIR / "snapshot.meta.json"
+        if not meta.is_file():
+            raise usage("AsOfRequired")
+        as_of_text = str(json.loads(meta.read_text(encoding="utf-8"))["as_of"])
+    try:
+        as_of_dt = datetime.fromisoformat(as_of_text)
+    except ValueError:
+        raise usage("InvalidAsOf", value=as_of_text) from None
+    if as_of_dt.tzinfo is None:
+        as_of_dt = as_of_dt.replace(tzinfo=UTC)
+    configure_logging(get_settings().log_level)
+    try:
+        code = asyncio.run(
+            _eval_ranking(
+                personas, judgments, as_of_dt, variant, baseline, max_drop, ranking_config, out
+            )
+        )
+    except RankingEvalError as exc:
+        raise usage("InvalidEvalFile", detail=str(exc)) from None
+    raise typer.Exit(code)
 
 
 @runs_app.command("report")
