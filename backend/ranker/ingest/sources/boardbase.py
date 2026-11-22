@@ -4,12 +4,12 @@ Each board is a scope, so one failing board never expires another board's jobs (
 """
 
 import asyncio
-from collections.abc import AsyncIterator, Awaitable, Callable, Iterable
-from typing import ClassVar, Literal
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Mapping
+from typing import ClassVar, Literal, cast
 
 import httpx
 import structlog
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from ranker.ingest.board_registry import (
     Ats,
@@ -32,6 +32,7 @@ log = structlog.get_logger("ranker.ingest.boards")
 
 ELIGIBLE_REGIONS = frozenset({"india", "apac", "worldwide"})
 MAX_SALARY = 1e10  # anything larger is garbage, not a salary
+MAX_COMPANY_NAME = 80
 
 
 class BoardsConfig(BaseSourceConfig):
@@ -40,6 +41,30 @@ class BoardsConfig(BaseSourceConfig):
     max_discovery_probes: int = 40
     request_interval_seconds: float = 1.0
     india_candidates: list[str] = Field(default_factory=lambda: list[str]())
+    # Display names for boards whose payload has none (slug -> name). Discovered boards fall
+    # back to the title-cased slug. Sanitised: valid slugs, stripped names <= 80 chars with no
+    # control characters (T-02-74).
+    company_names: dict[str, str] = Field(default_factory=lambda: dict[str, str]())
+
+    @field_validator("company_names", mode="before")
+    @classmethod
+    def _clean_company_names(cls, value: object) -> dict[str, str]:
+        if not isinstance(value, dict):
+            return {}
+        out: dict[str, str] = {}
+        for key, name in cast(dict[object, object], value).items():
+            if not valid_slug(key):
+                log.warning("board_company_name_invalid_slug")
+                continue
+            if not isinstance(name, str):
+                continue
+            name = name.strip()
+            if not name or len(name) > MAX_COMPANY_NAME:
+                continue
+            if any(ord(ch) < 32 or 127 <= ord(ch) < 160 for ch in name):
+                continue
+            out[cast(str, key)] = name
+        return out
 
 
 def seeds_for(ats: Ats, cfg: BoardsConfig) -> list[BoardSeed]:
@@ -112,7 +137,13 @@ def company_from_slug(slug: str) -> str:
     return slug.replace("-", " ").title()
 
 
+def board_company_name(slug: str, names: Mapping[str, str]) -> str:
+    """The configured display name for a board, else the title-cased slug."""
+    return names.get(slug) or company_from_slug(slug)
+
+
 Sleep = Callable[[float], Awaitable[None]]
+ScopeFlush = Callable[[], Awaitable[None]]
 
 
 class BoardAdapter:
@@ -127,6 +158,7 @@ class BoardAdapter:
         self._engine = ctx.engine
         self._sleep = sleep
         self._result = FetchResult()
+        self._scope_flush: ScopeFlush | None = None
 
     def configured(self) -> bool:
         return True
@@ -156,15 +188,29 @@ class BoardAdapter:
         )
         return payload, None
 
+    def set_scope_flush(self, hook: ScopeFlush | None) -> None:
+        """Register a callback awaited after each board's jobs were yielded (pipeline flush)."""
+        self._scope_flush = hook
+
     # ---------------------------------------------------------------------------------------
     async def fetch_boards(self) -> AsyncIterator[RawJob]:
-        """Fetch all active boards; callers must ``sync_seeds`` first (each adapter's fetch)."""
+        """Fetch all active boards; callers must ``sync_seeds`` first (each adapter's fetch).
+
+        Memory contract (T-02-75): at most one board's postings are referenced at a time. The
+        2026-11-22 production Greenhouse run (4,337 postings from 13 boards with full HTML)
+        peaked at 1023 of 1024 MiB because a board's payload, parsed list and dict stayed alive
+        while the next board was fetched. Now each board is fetched, parsed, its payload
+        released, its jobs yielded, its dict cleared, and the scope-flush hook (the pipeline's
+        normalise + upsert of the buffered postings) awaited, all before the next request. The
+        peak is one board per source instead of the whole source.
+        """
         self._result = FetchResult()
         boards = await active_boards(self._engine, self.ats)
         async with build_client() as client:
             for n, board in enumerate(boards):
                 if n:
                     await self._sleep(self._cfg.request_interval_seconds)
+                payload: object = None
                 try:
                     payload, host = await self.get_payload(client, board)
                 except InvalidBoardSlug:
@@ -185,12 +231,15 @@ class BoardAdapter:
                     continue
                 if not self.payload_ok(payload):
                     self._result.failed_scopes[board.slug] = "InvalidPayload:None"
+                    payload = None  # never hold a bad payload across the next fetch
                     continue
                 jobs, invalid = self.parse(payload, board.slug)
+                del payload  # the raw board JSON is the largest object; drop it first
                 self._result.invalid_items += invalid
                 unique: dict[str, RawJob] = {}
                 for job in jobs:
                     unique[job.source_job_id] = job  # last wins
+                del jobs
                 self._result.complete_scopes.add(board.slug)
                 self._result.scope_counts[board.slug] = len(unique)
                 await record_board_check(
@@ -204,6 +253,11 @@ class BoardAdapter:
                 )
                 for job in unique.values():
                     yield job
+                    del job  # the loop variable would keep the board's last posting alive
+                unique.clear()
+                del unique
+                if self._scope_flush is not None:
+                    await self._scope_flush()
         log.info(
             "source_fetch_done",
             source=self.name,

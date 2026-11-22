@@ -6,6 +6,7 @@ from typing import Any, cast
 import httpx
 import pytest
 import respx
+from pydantic import ValidationError
 
 from ranker.ingest.sources import (
     AdapterContext,
@@ -15,6 +16,7 @@ from ranker.ingest.sources import (
     registered_sources,
 )
 from ranker.ingest.sources.base import RawJob, SourceAdapter
+from ranker.ingest.sources.jobicy import JobicyConfig
 
 FIX = Path(__file__).parent / "fixtures"
 AN = "https://www.arbeitnow.com/api/job-board-api"
@@ -163,3 +165,22 @@ def test_sources_yaml_sections_load() -> None:
         cfg = BaseSourceConfig.model_validate(raw[name])
         assert cfg.enabled and cfg.expiry_policy == policy and cfg.max_runs_per_day == 4
         _adapter(name, **raw[name])
+
+
+@pytest.mark.parametrize("geo", ["india", "IN", "asia", "worldwide", ""])
+def test_jobicy_geo_only_documented_slugs(geo: str) -> None:
+    with pytest.raises(ValidationError):
+        JobicyConfig(geo=geo)  # pyright: ignore[reportArgumentType]
+
+
+@pytest.mark.parametrize("count", [0, 101])
+def test_jobicy_count_bounds(count: int) -> None:
+    with pytest.raises(ValidationError):
+        JobicyConfig(count=count)
+
+
+@respx.mock
+async def test_jobicy_geo_apac_is_sent() -> None:
+    route = respx.get(JB).mock(return_value=httpx.Response(200, json=_load("jobicy.json")))
+    await _collect(_adapter("jobicy", geo="apac", count=100))
+    assert dict(route.calls[0].request.url.params) == {"count": "100", "geo": "apac"}

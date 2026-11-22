@@ -38,6 +38,7 @@ from ranker.ingest.board_registry import (
     sync_seeds,
     valid_slug,
 )
+from ranker.ingest.expiry import expire_dropped_board
 from ranker.ingest.http import SourceHTTPError, build_client, get_json
 from ranker.ingest.sources.base import BaseSourceConfig, RawJob, SourcesConfig
 from ranker.ingest.sources.boardbase import (
@@ -430,9 +431,17 @@ async def run_board_maintenance(
     http = client or build_client()
     result = DiscoveryResult()
     status = "succeeded"
+    expired_on_drop = 0
     try:
         result = await discover_boards(engine, settings, cfg, http, sleep=sleep)
         result = result.merge(await recheck_boards(engine, settings, cfg, http, sleep=sleep))
+        if result.dropped:
+            # A dropped board is no longer a complete scope: expire its jobs now, reversibly.
+            async with engine.begin() as conn:
+                for entry in result.dropped:
+                    expired_on_drop += await expire_dropped_board(
+                        conn, source=entry["ats"], slug=entry["slug"], run_id=run_id
+                    )
         if result.errors:
             status = "partial"
     except Exception as exc:
@@ -447,6 +456,7 @@ async def run_board_maintenance(
             "rejected": result.rejected,
             "dropped": result.dropped,
             "rechecked": result.rechecked,
+            "expired_on_drop": expired_on_drop,
         }
         async with engine.begin() as conn:
             await store.finish_run(

@@ -43,7 +43,9 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
-    connectable = create_async_engine(get_settings().database_url, poolclass=NullPool)
+    connectable = create_async_engine(
+        get_settings().database_url, poolclass=NullPool, hide_parameters=True
+    )
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

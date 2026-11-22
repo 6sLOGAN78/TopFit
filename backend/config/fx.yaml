@@ -1,17 +1,19 @@
 # Fixed FX rates to INR, updated by hand (decision D-12, see docs/decisions/0003-salary-normalisation.md).
-# Source: approximate public reference rates (RBI reference rate page style, rounded). These were NOT
-# re-fetched at execution time because the plan ran without network access; they are rounded
-# approximations dated below and must be refreshed from the RBI reference rate page before launch.
+# Source: ECB euro foreign exchange reference rates,
+#   https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml
+# ECB reference date 2026-11-20, fetched once on 2026-11-22 (plan 02-18). INR crosses via EUR
+# (X = EUR->INR / EUR->X), AED via the 3.6725 USD peg (the ECB does not publish AED). Rounded to
+# 2 decimals. Refreshed by hand per D-12; no runtime fetching.
 # Every converted job stores salary_fx_as_of = as_of so the UI can say "converted at X as of <date>".
 as_of: 2026-11-22
 rates_to_inr:
-  USD: 88.5
-  EUR: 102.5
-  GBP: 116.0
-  SGD: 68.5
-  AUD: 58.0
-  CAD: 63.5
-  AED: 24.1
+  USD: 92.68
+  EUR: 101.85
+  GBP: 121.63
+  SGD: 71.93
+  AUD: 61.78
+  CAD: 64.78
+  AED: 25.23
 period_multiplier:
   year: 1
   month: 12

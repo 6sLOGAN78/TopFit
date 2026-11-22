@@ -458,6 +458,9 @@ class InternshalaAdapter:
                     except (FetchRefused, RobotsDisallowed) as exc:
                         refusal = str(exc) if isinstance(exc, FetchRefused) else "RobotsDisallowed"
                         self._result.failed_scopes[scope] = refusal
+                        # Structured flag so alert rules (OPS-11) can exclude refusals (D-15).
+                        # The first refusal is the cause; later scopes only echo host_refused.
+                        self._result.extra_notes.setdefault("source_refused", {"reason": refusal})
                         log.warning("source_refused", source=self.name, reason=refusal)
                     self._result.scope_counts[scope] = count
                     if scope not in self._result.failed_scopes:

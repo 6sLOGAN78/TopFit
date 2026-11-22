@@ -15,11 +15,13 @@ from ranker.config_loader import load_config
 from ranker.embeddings.embedder import Embedder, build_embedder
 from ranker.embeddings.service import embed_missing
 from ranker.ingest import store
+from ranker.ingest.board_registry import ALL_ATS
 from ranker.ingest.dedupe import recompute_dedupe
 from ranker.ingest.enrich import enqueue_enrichment
 from ranker.ingest.expiry import (
     ExpiryConfig,
     expire_absent_after_run,
+    expire_stale_board_jobs,
     expire_ttl,
     volume_guard,
 )
@@ -251,9 +253,17 @@ async def _expire(
             if decision.allowed:
                 allowed_scopes.append(scope)
         guard["scopes"] = scope_notes
-        return await expire_absent_after_run(
+        absent = await expire_absent_after_run(
             conn, source=source, run_id=run_id, scopes=allowed_scopes, cfg=cfg
         )
+        if source not in ALL_ATS:
+            return absent
+        # Dropped boards and stale jobs of healthy boards (only reached past the source guard).
+        fallback = await expire_stale_board_jobs(
+            conn, source=source, run_id=run_id, now=datetime.now(UTC), cfg=cfg
+        )
+        guard["board_fallback"] = fallback
+        return absent + fallback
 
 
 async def _signals(
@@ -293,20 +303,28 @@ async def _run(
     buffer: list[RawJob] = []
     yielded = 0
     adapter_failed = False
+
+    async def flush() -> None:
+        nonlocal buffer
+        if not buffer:
+            return
+        batch, buffer = buffer, []
+        await _process_buffer(engine, run_id, source, batch, now, summary, errors, skipped_samples)
+
+    # Board adapters call this after each board, so a board's postings are normalised and
+    # upserted (and released) before the next board is fetched (memory contract, T-02-75).
+    hook = getattr(adapter, "set_scope_flush", None)
+    if callable(hook):
+        hook(flush)
     try:
         async for raw in adapter.fetch():
             yielded += 1
             summary.fetched += 1
             buffer.append(raw)
+            del raw  # the loop variable would keep the previous board's last posting alive
             if len(buffer) >= store.BATCH_SIZE:
-                await _process_buffer(
-                    engine, run_id, source, buffer, now, summary, errors, skipped_samples
-                )
-                buffer = []
-        if buffer:
-            await _process_buffer(
-                engine, run_id, source, buffer, now, summary, errors, skipped_samples
-            )
+                await flush()
+        await flush()
     except Exception as exc:
         adapter_failed = True
         if len(errors) < MAX_ERRORS:
@@ -319,7 +337,10 @@ async def _run(
     try:
         if embedder is None:
             embedder = await anyio.to_thread.run_sync(partial(build_embedder, settings))
-        embedded = await embed_missing(engine, embedder, settings.embed_model)
+        # One bounded pass after the fetch loop is the embedding memory contract: keyset pages
+        # of 32 texts with a 1,500-char description cap, so it never holds more than 32
+        # postings' texts. Embedding per board would only add model calls and save nothing.
+        embedded = await embed_missing(engine, embedder, settings.embed_model, batch_size=32)
     except Exception as exc:
         embed_failed = True
         if len(errors) < MAX_ERRORS:

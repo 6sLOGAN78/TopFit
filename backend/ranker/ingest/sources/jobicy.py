@@ -1,14 +1,24 @@
 """Jobicy adapter: one GET of the latest-N window, TTL expiry (ING-08).
 
-Attribution (ADR 0001): credit Jobicy and link to its ``url``. ``geo=india`` returned HTTP 400
-on 2026-11-22, so no geo filter is sent by default; scope rules decide eligibility.
+Attribution (ADR 0001): credit Jobicy and link to its ``url``.
+
+Documentation (https://jobicy.com/jobs-rss-feed, read 2026-11-22): parameters are ``count``
+(1-100), ``cursor``, ``geo`` (a location slug; documented examples ``usa``, ``europe``,
+``apac``, ``canada``; ``?get=locations`` lists the current set), ``industry`` and ``tag``.
+There is no India slug, which is why ``geo=india`` returned HTTP 400 on 2026-11-22, and India is
+not among the APAC locations shown. ``geo=apac`` would also drop the worldwide-remote postings,
+which are the main India-eligible ones, so the feed stays unfiltered by default and the scope
+rules decide eligibility. ``geo`` only accepts the documented slugs.
+
+The docs now name ``GET https://jobicy.com/api/jobs`` (cursor-paginated). This adapter keeps
+``/api/v2/remote-jobs``, which answered in the 02-16 live check; switching is a follow-up.
 """
 
 from collections.abc import AsyncIterator
 from typing import Any, Literal, cast
 
 import structlog
-from pydantic import ValidationError
+from pydantic import Field, ValidationError
 
 from ranker.ingest.http import SourceHTTPError, build_client, get_json
 from ranker.ingest.sources import apiutil
@@ -28,9 +38,9 @@ DEFAULT_URL = "https://jobicy.com/api/v2/remote-jobs"
 
 class JobicyConfig(BaseSourceConfig):
     url: str = DEFAULT_URL
-    count: int = 50
-    # "india" returned HTTP 400 on 2026-11-22; leave None unless Jobicy documents a valid value.
-    geo: str | None = None
+    count: int = Field(default=50, ge=1, le=100)
+    # Documented slugs only (see module docstring); None keeps the worldwide-remote postings.
+    geo: Literal["apac", "usa", "canada", "europe"] | None = None
 
 
 def _to_raw(item: dict[str, Any]) -> RawJob:

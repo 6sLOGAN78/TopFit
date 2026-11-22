@@ -1,16 +1,48 @@
-"""Liveness (healthz) and readiness (readyz) endpoints."""
+"""Liveness (healthz) and readiness (readyz) endpoints.
+
+CR-01 / T-02-70: readyz is public, so it must be cheap. The embedding self-check runs once at
+startup (:func:`embedding_selfcheck`, called from the app lifespan) and readyz only reports the
+cached result; the request path does ``SELECT 1`` plus the pgvector version lookup under a 3 s
+timeout and no model inference or thread-pool work. There is deliberately no background
+refresh: the ONNX model is immutable once loaded, so re-running inference would only bring back
+idle CPU load without detecting anything new.
+"""
 
 import asyncio
+from functools import partial
 from typing import Any
 
 import anyio
+import anyio.to_thread
+import structlog
 from fastapi import APIRouter, Request, Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from ranker.embeddings.embedder import EMBED_DIM, Embedder
+
 router = APIRouter()
+log = structlog.get_logger("ranker.api.health")
+
+SELFCHECK_TIMEOUT_SECONDS = 30
 
 MIN_VECTOR = (0, 8, 3)
+
+
+async def embedding_selfcheck(embedder: Embedder | None) -> dict[str, Any]:
+    """Embed one probe text once (startup only). Logs only the exception type on failure."""
+    if embedder is None:
+        return {"ok": False, "dim": 0}
+    try:
+        with anyio.fail_after(SELFCHECK_TIMEOUT_SECONDS):
+            vectors = await anyio.to_thread.run_sync(
+                partial(embedder.embed, ["readiness probe"]), abandon_on_cancel=True
+            )
+        dim = len(vectors[0])
+    except Exception as exc:
+        log.error("embedding_selfcheck_failed", error_type=type(exc).__name__)
+        return {"ok": False, "dim": 0}
+    return {"ok": dim == EMBED_DIM, "dim": dim}
 
 
 @router.get("/healthz")
@@ -40,15 +72,10 @@ async def readyz(request: Request, response: Response) -> dict[str, Any]:
 
     embedder = getattr(request.app.state, "embedder", None)
     checks["model"] = {"ok": embedder is not None}
-    if embedder is not None:
-        try:
-            with anyio.fail_after(5):
-                vec = await anyio.to_thread.run_sync(embedder.embed, ["readiness probe"])
-            checks["embedding"] = {"ok": len(vec[0]) == 384, "dim": len(vec[0])}
-        except Exception as exc:
-            checks["embedding"] = {"ok": False, "dim": 0, "error": type(exc).__name__}
-    else:
-        checks["embedding"] = {"ok": False, "dim": 0}
+    # Cached startup result; no inference on the request path (CR-01).
+    checks["embedding"] = dict(
+        getattr(request.app.state, "embedding_check", None) or {"ok": False, "dim": 0}
+    )
 
     all_ok = all(c["ok"] for c in checks.values())
     response.status_code = 200 if all_ok else 503
