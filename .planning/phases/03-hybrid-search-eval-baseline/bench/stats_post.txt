@@ -1,0 +1,6 @@
+ranker-bench-bench-api-1 323.4MiB / 1GiB 2.52%
+ranker-worker-1 78.46MiB / 1GiB 0.00%
+ranker-api-1 304.2MiB / 1GiB 1.08%
+ranker-web-1 49.04MiB / 3.814GiB 0.00%
+ranker-caddy-1 21MiB / 3.814GiB 0.01%
+ranker-db-1 550.4MiB / 3.814GiB 193.53%

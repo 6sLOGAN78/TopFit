@@ -1,0 +1,1 @@
+{"target_db": "ranker_bench", "source_jobs": 1838, "factor": 25, "jitter": 0.02, "seed": 7, "rows": 45950, "db_size": "919 MB", "load_seconds": 107.6, "total_seconds": 114.2}
