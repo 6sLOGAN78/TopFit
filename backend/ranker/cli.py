@@ -20,6 +20,16 @@ from ranker.config_loader import load_config
 from ranker.db.engine import create_engine_from_settings
 from ranker.embeddings.embedder import build_embedder
 from ranker.embeddings.service import embed_missing, invalidate_other_models
+from ranker.evals.grading import (
+    agreement_report,
+    blind_review,
+    estimate_cost_usd,
+    grade_pool,
+    graded_pairs,
+    load_job_texts,
+    load_pool,
+    pool_candidates,
+)
 from ranker.evals.ingest_eval import (
     EvalSetError,
     capture_samples,
@@ -328,6 +338,114 @@ async def _snapshot_load(gz: Path, sha_file: Path, replace: bool) -> int:
     return 0
 
 
+def _as_of_from_meta(as_of: str | None) -> datetime | None:
+    text_ = as_of
+    if text_ is None:
+        meta = EVAL_DATA_DIR / "snapshot.meta.json"
+        if not meta.is_file():
+            return None
+        text_ = str(json.loads(meta.read_text(encoding="utf-8"))["as_of"])
+    dt = datetime.fromisoformat(text_)
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=UTC)
+
+
+async def _eval_pool(personas_path: Path, as_of: datetime, pool_path: Path, judgments: Path) -> int:
+    personas = load_personas(personas_path)
+    settings = get_settings()
+    engine = create_engine_from_settings(settings)
+    try:
+        embedder = await anyio.to_thread.run_sync(partial(build_embedder, settings))
+        pooled = await pool_candidates(
+            engine,
+            embedder,
+            settings,
+            personas,
+            as_of=as_of,
+            pool_path=pool_path,
+            judgments_path=judgments,
+        )
+    finally:
+        await engine.dispose()
+    typer.echo(
+        json.dumps(
+            {
+                "personas": len(pooled),
+                "pairs": sum(len(v) for v in pooled.values()),
+                "out": str(pool_path),
+            }
+        )
+    )
+    return 0
+
+
+async def _eval_grade(personas_path: Path, pool_path: Path, judgments: Path, yes: bool) -> int:
+    from ranker.llm.client import build_gateway
+
+    personas = load_personas(personas_path)
+    pool = load_pool(pool_path)
+    settings = get_settings()
+    done = await anyio.to_thread.run_sync(graded_pairs, judgments)
+    n = sum(1 for pid, ids in pool.items() for jid in ids if (pid, jid) not in done)
+    typer.echo(
+        json.dumps(
+            {
+                "to_grade": n,
+                "model": settings.llm_model_agent,
+                "estimated_max_cost_usd": round(estimate_cost_usd(settings, n), 2),
+            }
+        )
+    )
+    if not yes:
+        typer.echo(json.dumps({"error": "ConfirmationRequired", "hint": "pass --yes"}), err=True)
+        return EXIT_USAGE
+    engine = create_engine_from_settings(settings)
+    try:
+        stats = await grade_pool(
+            build_gateway(engine, settings),
+            engine,
+            personas,
+            pool,
+            judgments,
+            model_label=settings.llm_model_agent,
+        )
+    finally:
+        await engine.dispose()
+    typer.echo(
+        json.dumps(
+            {
+                "graded": stats.graded,
+                "skipped": stats.skipped,
+                "errors": stats.errors,
+                "stopped": stats.stopped,
+                "pending": len(stats.pending),
+            }
+        )
+    )
+    return EXIT_FAILED if stats.stopped else 0
+
+
+async def _eval_review(personas_path: Path, judgments: Path, fraction: float, seed: int) -> int:
+    personas = load_personas(personas_path)
+    settings = get_settings()
+    engine = create_engine_from_settings(settings)
+    try:
+        texts = await load_job_texts(engine, (j.job_id for j in load_judgments(judgments)))
+    finally:
+        await engine.dispose()
+    recorded = await anyio.to_thread.run_sync(
+        partial(
+            blind_review,
+            judgments,
+            personas,
+            lambda jid: texts.get(jid, "(posting not in this database)"),
+            fraction=fraction,
+            seed=seed,
+        )
+    )
+    typer.echo(json.dumps({"recorded": recorded}))
+    return 0
+
+
 @app.callback()
 def main() -> None:
     """Ranker operator commands."""
@@ -504,6 +622,82 @@ def eval_ranking_cmd(
     except RankingEvalError as exc:
         raise usage("InvalidEvalFile", detail=str(exc)) from None
     raise typer.Exit(code)
+
+
+@eval_app.command("pool")
+def eval_pool_cmd(
+    personas: Annotated[Path, typer.Option(help="Personas JSONL")] = EVAL_DATA_DIR
+    / "personas.jsonl",
+    as_of: Annotated[str | None, typer.Option(help="ISO timestamp; default from meta")] = None,
+    out: Annotated[Path, typer.Option(help="Pool JSONL")] = EVAL_DATA_DIR / "pool.jsonl",
+    judgments: Annotated[Path, typer.Option(help="Judgments JSONL")] = EVAL_DATA_DIR
+    / "judgments.jsonl",
+) -> None:
+    """Union the top 20 of lexical, vector, hybrid and hybrid+signals per persona."""
+    if not personas.is_file():
+        typer.echo(json.dumps({"error": "FileNotFound", "path": str(personas)}), err=True)
+        raise typer.Exit(EXIT_USAGE)
+    try:
+        as_of_dt = _as_of_from_meta(as_of)
+    except ValueError:
+        as_of_dt = None
+    if as_of_dt is None:
+        typer.echo(json.dumps({"error": "AsOfRequired"}), err=True)
+        raise typer.Exit(EXIT_USAGE)
+    configure_logging(get_settings().log_level)
+    raise typer.Exit(asyncio.run(_eval_pool(personas, as_of_dt, out, judgments)))
+
+
+@eval_app.command("grade")
+def eval_grade_cmd(
+    personas: Annotated[Path, typer.Option(help="Personas JSONL")] = EVAL_DATA_DIR
+    / "personas.jsonl",
+    pool: Annotated[Path, typer.Option(help="Pool JSONL")] = EVAL_DATA_DIR / "pool.jsonl",
+    judgments: Annotated[Path, typer.Option(help="Judgments JSONL")] = EVAL_DATA_DIR
+    / "judgments.jsonl",
+    yes: Annotated[bool, typer.Option("--yes", help="Confirm the estimated spend")] = False,
+) -> None:
+    """Grade pooled candidates 0-3 with the agent model (spends LLM budget; needs --yes)."""
+    for path in (personas, pool):
+        if not path.is_file():
+            typer.echo(json.dumps({"error": "FileNotFound", "path": str(path)}), err=True)
+            raise typer.Exit(EXIT_USAGE)
+    configure_logging(get_settings().log_level)
+    raise typer.Exit(asyncio.run(_eval_grade(personas, pool, judgments, yes)))
+
+
+@eval_app.command("review")
+def eval_review_cmd(
+    blind: Annotated[bool, typer.Option("--blind", help="Hide Claude's grade (required)")] = False,
+    fraction: Annotated[float, typer.Option(min=0.0, max=1.0)] = 0.2,
+    seed: Annotated[int, typer.Option()] = 7,
+    personas: Annotated[Path, typer.Option(help="Personas JSONL")] = EVAL_DATA_DIR
+    / "personas.jsonl",
+    judgments: Annotated[Path, typer.Option(help="Judgments JSONL")] = EVAL_DATA_DIR
+    / "judgments.jsonl",
+) -> None:
+    """Rate a seeded subset blind to Claude's grade; records human_grade."""
+    if not blind:
+        typer.echo(json.dumps({"error": "BlindRequired", "hint": "pass --blind"}), err=True)
+        raise typer.Exit(EXIT_USAGE)
+    for path in (personas, judgments):
+        if not path.is_file():
+            typer.echo(json.dumps({"error": "FileNotFound", "path": str(path)}), err=True)
+            raise typer.Exit(EXIT_USAGE)
+    configure_logging(get_settings().log_level)
+    raise typer.Exit(asyncio.run(_eval_review(personas, judgments, fraction, seed)))
+
+
+@eval_app.command("agreement")
+def eval_agreement_cmd(
+    judgments: Annotated[Path, typer.Option(help="Judgments JSONL")] = EVAL_DATA_DIR
+    / "judgments.jsonl",
+) -> None:
+    """Claude-versus-owner agreement on reviewed rows: exact %, within-1 %, weighted kappa."""
+    if not judgments.is_file():
+        typer.echo(json.dumps({"error": "FileNotFound", "path": str(judgments)}), err=True)
+        raise typer.Exit(EXIT_USAGE)
+    typer.echo(json.dumps(agreement_report(load_judgments(judgments)).model_dump()))
 
 
 @snapshot_app.command("export")
