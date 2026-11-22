@@ -60,17 +60,17 @@ export const zJobResult = z.object({
         'internship',
         'unknown'
     ]),
-    first_seen_at: z.iso.datetime(),
+    first_seen_at: z.iso.datetime({ offset: true }),
     ghost_reasons: z.array(z.enum([
         'stale_60d',
         'reposted_3x',
         'no_apply_url'
     ])),
     id: z.int(),
-    last_seen_at: z.iso.datetime(),
+    last_seen_at: z.iso.datetime({ offset: true }),
     matched_skills: z.array(z.string()),
     onsite_days_per_week: z.int().nullable(),
-    posted_at: z.iso.datetime().nullable(),
+    posted_at: z.iso.datetime({ offset: true }).nullable(),
     remote_eligibility: z.enum([
         'worldwide',
         'india',
