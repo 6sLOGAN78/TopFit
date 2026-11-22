@@ -1,0 +1,39 @@
+{
+  "count": 4,
+  "mean": 1500000.0,
+  "results": [
+    {
+      "id": "9001",
+      "title": "Senior <strong>Python</strong> Developer",
+      "description": "Build <strong>Python</strong> services for a fintech platform in Gurgaon ...",
+      "redirect_url": "https://www.adzuna.in/land/ad/9001?se=synthetic",
+      "created": "2026-11-20T10:00:00Z",
+      "company": {"display_name": "Acme Payments", "canonical_name": "acme payments"},
+      "location": {"display_name": "Gurgaon, Haryana", "area": ["India", "Haryana", "Gurgaon"]},
+      "category": {"tag": "it-jobs", "label": "IT Jobs"},
+      "salary_min": 1200000,
+      "salary_max": 1800000,
+      "salary_is_predicted": "1",
+      "contract_time": "full_time",
+      "contract_type": "permanent"
+    },
+    {
+      "id": "9002",
+      "title": "Data Engineer",
+      "description": "Short snippet only ...",
+      "full_description": "Full text of the data engineer role. Spark, Airflow and SQL.",
+      "redirect_url": "https://www.adzuna.in/land/ad/9002?se=synthetic",
+      "created": "2026-11-20T08:30:00Z",
+      "company": {"display_name": "Globex Data"},
+      "location": {"display_name": "Bengaluru, Karnataka", "area": ["India", "Karnataka", "Bengaluru"]},
+      "category": {"tag": "it-jobs", "label": "IT Jobs"},
+      "salary_is_predicted": "0"
+    },
+    {
+      "id": "9003",
+      "title": "Job without a link",
+      "description": "No redirect_url, must be counted as invalid",
+      "company": {"display_name": "Nobody Ltd"}
+    }
+  ]
+}

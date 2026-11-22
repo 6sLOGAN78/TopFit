@@ -30,10 +30,17 @@ REDACT_KEYS: frozenset[str] = frozenset(
         "cookie",
         "set-cookie",
         "x-api-key",
+        "app_key",
+        "app_id",
+        "api_key",
+        "anthropic_api_key",
+        "x-admin-token",
+        "admin_token",
     }
 )
 MASK = "[REDACTED]"
 EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
+QUERY_SECRET_RE = re.compile(r"(?i)\b(app_key|app_id|api_key|key|token)=([^&\s\"']+)")
 
 
 def _scrub(value: Any) -> Any:
@@ -43,7 +50,7 @@ def _scrub(value: Any) -> Any:
     if isinstance(value, list | tuple):
         return [_scrub(v) for v in cast("list[Any]", value)]
     if isinstance(value, str):
-        return EMAIL_RE.sub("[EMAIL]", value)
+        return QUERY_SECRET_RE.sub(r"\1=[REDACTED]", EMAIL_RE.sub("[EMAIL]", value))
     return value
 
 
@@ -121,6 +128,9 @@ def configure_logging(level: str = "INFO", stream: TextIO | None = None) -> None
         lg.handlers.clear()
         lg.propagate = True
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+    # httpx logs every request URL at INFO, and source API keys travel in the query string
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
     _forward_loguru()
 
 
