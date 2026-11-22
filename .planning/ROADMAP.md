@@ -39,7 +39,7 @@ SPEC.md §17 used phases 0–10. This roadmap compresses them into 6 coarse phas
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundations & Walking-Skeleton Deploy** - Pinned monorepo, CI, and a live API + pgvector on the production custom domain from day 1 (completed 2026-11-21)
-- [ ] **Phase 2: Live Jobs Index** - Source spike, then scheduled, idempotent, normalised, embedded Remotive + Adzuna ingestion, plus the LLM gateway and tasks queue
+- [ ] **Phase 2: Live Jobs Index** - Source spike, then scheduled, idempotent, normalised, embedded ingestion from the free source mix (Greenhouse/Lever/Ashby boards, Internshala, Remotive, Arbeitnow, RemoteOK, Jobicy; Adzuna adapter ready but disabled), plus the LLM gateway and tasks queue
 - [ ] **Phase 3: Hybrid Search & Eval Baseline** - Correct lexical + vector + RRF retrieval with hard filters, guest search UI with chips, and a frozen-snapshot eval with a CI gate
 - [ ] **Phase 4: Profiles, Ranking & Personalised Feed** - Resume → editable profile, services/ + pure rank(), cached LLM rerank with degraded mode, fit labels, save/skip, ablation, guest-session security
 - [ ] **Phase 5: Grounded Agent, Memory & MVP Launch** - Streaming tool-calling chat with grounding and cross-session memory, profile page, accessibility polish, Sentry, README: MVP is live
@@ -90,19 +90,19 @@ Plans:
 
 ### Phase 2: Live Jobs Index
 
-**Goal**: Production holds a fresh, normalised, embedded index of real tech jobs from Remotive and Adzuna. A single worker refreshes it on a schedule, and a refresh never wipes it. The shared LLM gateway and `tasks` queue are in place for every later phase.
+**Goal**: Production holds a fresh, normalised, embedded index of real tech jobs from every source reachable without logins or anti-bot bypass (ADR 0001: Greenhouse/Lever/Ashby boards, Internshala listing pages, Remotive, Arbeitnow, RemoteOK, Jobicy; Adzuna ships disabled until a plan is active). A single worker refreshes it in a morning read on a schedule, and a refresh never wipes it. The shared LLM gateway and `tasks` queue are in place for every later phase.
 **Mode:** mvp
 **Depends on**: Phase 1
-**Requirements**: ING-00, ING-01, ING-02, ING-04, ING-05, ING-06, ING-07, ING-08, ING-09, ING-11, ING-12, NORM-01, NORM-02, NORM-03, NORM-04, NORM-05, NORM-06, NORM-07, SRCH-01, FND-06, FND-07, OPS-02
+**Requirements**: ING-00, ING-01, ING-02, ING-04, ING-05, ING-06, ING-07, ING-08, ING-09, ING-11, ING-12, ING-13 (pulled in per ADR 0001 / D-14), NORM-01, NORM-02, NORM-03, NORM-04, NORM-05, NORM-06, NORM-07, SRCH-01, FND-06, FND-07, OPS-02
 **Success Criteria** (what must be TRUE):
 
-  1. `docs/decisions/0001-sources.md` records the measured per-source volume, quota and terms, plus the resulting active-job target. It also states whether Greenhouse/Lever (ING-13) must be pulled forward into this phase.
-  2. The production index holds the ING-00 target number of active tech jobs, each with a 384-d embedding and its model name. A scheduler running in exactly one worker process keeps it refreshed within source quotas, and every run appears in `ingest_runs` with fetched/inserted/updated/unchanged/expired/failed counts.
+  1. `docs/decisions/0001-sources.md` records the measured per-source volume, quota and terms, plus the resulting active-job target. It records the decision to pull Greenhouse/Lever/Ashby (ING-13) into this phase and the target of 1500 active jobs from free sources.
+  2. The production index holds the ING-00 target (1500) of active tech jobs, each with a 384-d embedding and its model name. A scheduler running in exactly one worker process keeps it refreshed within source quotas in a morning read that finishes before 06:30 IST, and every run appears in `ingest_runs` with fetched/inserted/updated/unchanged/expired/failed counts.
   3. An admin can trigger one source with `ranker ingest <source>` or the admin endpoint:
      - Re-running the same batch leaves the database unchanged, and unchanged jobs are not re-embedded.
      - 429/5xx responses are retried with backoff.
      - A run that fetches under 50% of its normal volume expires nothing.
-     - Adzuna jobs expire by age; full-feed sources expire by missed complete runs.
+     - Adzuna and capped-window feeds expire by age; full-feed sources expire by missed complete runs.
   4. A sampled job shows:
      - a clean description
      - city/country/remote type with Indian aliases resolved (Bangalore → Bengaluru, Gurgaon → Gurugram)
@@ -117,50 +117,58 @@ Plans:
      - runnable against the fake provider in tests
 
      Background jobs enqueued in `tasks` are picked up by the worker exactly once, using `SKIP LOCKED`.
-**Plans:** 15 plans
+**Plans:** 17 plans
 
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — ING-00 spike CLI, owner sitting (Adzuna keys, quota, terms, package check), dependency batch, ADR 0001 with target and ING-13 decision
-- [ ] 02-02-PLAN.md — Typed YAML config loader, Postgres `tasks` queue (SKIP LOCKED), worker consumer and leader-locked scheduler (FND-07, OPS-02)
+- [x] 02-01-PLAN.md — ING-00 spike CLI, owner sitting (Adzuna keys, quota, terms, package check), dependency batch, ADR 0001 with target and ING-13 decision
+- [x] 02-02-PLAN.md — Typed YAML config loader, Postgres `tasks` queue (SKIP LOCKED), worker consumer and leader-locked scheduler (FND-07, OPS-02)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [ ] 02-03-PLAN.md — LLM gateway: fake + Anthropic providers, llm_calls logging, $5 monthly budget, typed schemas, content-block pass-through (FND-06)
-- [ ] 02-04-PLAN.md — Location, remote-eligibility and tech/geo scope rules + ADR 0002 (NORM-02, NORM-03)
-- [ ] 02-05-PLAN.md — Salary/FX, seniority/employment and company normalisers + ADR 0003 (NORM-04, NORM-05, NORM-07)
+- [ ] 02-04-PLAN.md — Location (+ on-site days, D-19), remote-eligibility and tech/geo scope rules + ADR 0002 (NORM-02, NORM-03)
+- [ ] 02-05-PLAN.md — Salary/FX, seniority/employment, company normalisers and D-19 dealbreaker rules (visa, relocation, industry, stage, size) + ADR 0003 (NORM-04, NORM-05, NORM-07)
 - [ ] 02-06-PLAN.md — ≥ 400-skill taxonomy + matcher and description cleaner (NORM-06, NORM-01)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-07-PLAN.md — Remotive slice part 1: jobs-index migration, SourceAdapter contract, retrying HTTP with per-attempt counting, Remotive adapter (ING-01, ING-04, ING-07)
+- [ ] 02-07-PLAN.md — Remotive slice part 1: jobs-index migration (with D-18/D-19/D-20 columns), SourceAdapter contract, retrying HTTP with honest UA and per-attempt counting, Remotive adapter (ING-01, ING-04, ING-07)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 02-08-PLAN.md — Remotive slice part 2: normalize_job, hashing, idempotent upsert, ingest_runs lifecycle, `ranker ingest` (ING-05, ING-06, ING-11)
+- [ ] 02-08-PLAN.md — Remotive slice part 2: normalize_job (incl. dealbreaker fields), hashing, idempotent upsert, ingest_runs lifecycle with in_scope counter, `ranker ingest` (ING-05, ING-06, ING-11)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
 - [ ] 02-09-PLAN.md — Embeddings in every run + `ranker embed` backfill, change-only re-embed (SRCH-01, ING-09)
-- [ ] 02-10-PLAN.md — Adzuna adapter within the measured quota (every retry counted), auto-backfill, key redaction (ING-02)
+- [ ] 02-10-PLAN.md — Adzuna adapter within the measured quota (every retry counted), auto-backfill, key redaction; ships disabled while the budget is 0 (ING-02)
 - [ ] 02-12-PLAN.md — LLM fallback enrichment tasks with cache, no-key deferral and a 7-day outage deferral cap (NORM-03/05, D-08, D-11)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 02-11-PLAN.md — Expiry (absence/TTL) with 50% volume guard, simple dedupe, `purge-source` (ING-08)
+- [ ] 02-11-PLAN.md — Expiry (absence/TTL) with 50% volume guard, cross-source duplicate grouping, repost/ghost signals with run counters, `purge-source` (ING-08, D-18)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 02-13-PLAN.md — Scheduled sources in the leader worker, ingest/TTL handlers, admin trigger endpoint, config self-check, memory limits (OPS-02, ING-11)
+- [ ] 02-13-PLAN.md — Scheduled sources in the leader worker with the D-17 morning-read window, ingest/TTL handlers, admin trigger endpoint, config self-check, memory limits (OPS-02, ING-11)
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 02-14-PLAN.md — Greenhouse/Lever boards with seed sync on every fetch and guarded discovery — executes only if ADR 0001 says pull-in (ING-13)
+- [ ] 02-14-PLAN.md — Greenhouse, Lever and Ashby boards with India-heavy seeds from the spike, seed sync on every fetch and guarded discovery (ING-13)
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 02-15-PLAN.md — Production secrets, one-off-container backfill, measurement and ING-12 verdict in ADR 0001 (owner checkpoints)
+- [ ] 02-16-PLAN.md — Arbeitnow, RemoteOK, Jobicy API adapters and the D-15 Internshala listing-page adapter with a polite robots-aware fetcher (D-14, D-15)
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
+- [ ] 02-17-PLAN.md — Ingestion evals: ~100 labelled real postings, `ranker eval ingest` with a CI floor, `ranker runs report` (D-20)
+
+**Wave 11** *(blocked on Wave 10 completion)*
+
+- [ ] 02-15-PLAN.md — Production secrets, one-off-container backfill of all free sources, morning-read check, eval label review and ING-12 verdict against 1500 in ADR 0001 (owner checkpoints)
 
 **Research**: Yes. Run `/gsd:plan-phase --research-phase 2`: live Adzuna quota, `results_per_page`/`max_days_old`/`sort_by`, ToS on storing descriptions; Greenhouse/Lever board APIs as a fallback volume source.
 
