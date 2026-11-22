@@ -199,7 +199,44 @@ Plans:
   5. Every production deploy runs Alembic migrations automatically, then a `/readyz` + one-search smoke test.
   6. The API contract is typed end to end: `docs/openapi.json` is regenerated from the Pydantic models and a stale copy fails CI; the web app uses Zod schemas and a typed query client generated from it, so a breaking API change fails the web build; `/api/docs` shows a Scalar API reference; Schemathesis runs against every endpoint and finds no 5xx or schema-mismatched responses.
 
-**Plans**: TBD
+**Plans**: 14 plans (7 waves)
+
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — Hybrid retrieval API slice: skills_tsv + search_logs migration, OR lexical + exact vector + RRF, /api/jobs/search and /api/meta with the full contract
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-02-PLAN.md — API contract pipeline: package legitimacy checkpoint, error envelope, Scalar, OpenAPI export + staleness, hey-api client, Schemathesis CI
+- [ ] 03-03-PLAN.md — Rules query parser, whitelisted hard filters (D-08 geography, D-09 salary), set-aside and relax counts
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 03-04-PLAN.md — Guest ranking signals, company cap, why-matched line, signed Load-more cursor, eval SearchOptions
+- [ ] 03-05-PLAN.md — Jev access checkpoint (S4), per-request gateway providers, JevProvider, cached/time-boxed model fallback, ADR 0006
+- [ ] 03-06-PLAN.md — Web search page: TopFit hero, URL state, job cards, Load more, degraded/429/error states
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 03-07-PLAN.md — Postgres rate limits (SEC-04), retention prune, one-search deploy smoke (OPS-03)
+- [ ] 03-08-PLAN.md — Web chips, parse summary, set-aside line, relax suggestions, parse-model settings sheet
+- [ ] 03-09-PLAN.md — Eval metrics + bootstrap CIs + weighted kappa, `ranker eval ranking` gate, CI eval-gate job
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 03-10-PLAN.md — Snapshot export/load, candidate pooling, LLM grading, blind review and agreement tooling
+- [ ] 03-12-PLAN.md — Production deploy + owner UAT, spikes S1/S3 on the VM, ADR 0004 (exact vs HNSW)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 03-11-PLAN.md — D-17 query-parse eval harness and 50-query gold set
+- [ ] 03-13-PLAN.md — Eval dataset: private snapshot repo + token, personas, snapshot, pooling and grading
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 03-14-PLAN.md — Owner blind review, weight tuning (ADR 0005), baseline + armed CI gate, live D-17 run
+
 **UI hint**: yes
 **Research**: Yes. Run `/gsd:plan-phase --research-phase 3`. This research is empirical: exact vs HNSW benchmark at ~50k rows, tsvector tokenisation check, k6 at 20 rps with 1 uvicorn worker. Plan explicit spike tasks.
 
