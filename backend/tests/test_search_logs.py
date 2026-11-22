@@ -1,9 +1,9 @@
 import pytest
-from ranker.search.service import SearchRequest, search
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from ranker.embeddings.embedder import FakeEmbedder
+from ranker.search.service import SearchRequest, search
 from ranker.settings import get_settings
 from tests.fixtures.search.jobs_seed import seed_decoys
 

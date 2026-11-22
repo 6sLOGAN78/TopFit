@@ -13,3 +13,5 @@ Files added by later plans:
 - `fx.yaml` - fixed FX rates for salary normalisation
 - `skills.yaml` - skill taxonomy and aliases
 - `llm_prices.yaml` - per-model token prices for cost accounting
+- `ranking.yaml` - search retrieval parameters (K values, RRF constant, vector mode); any
+  change alters the `pipeline_version` stored in `search_logs`

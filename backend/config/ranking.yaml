@@ -1,0 +1,14 @@
+# Search ranking configuration (SRCH-02..04). Loaded by ranker.search.config; changing any
+# value changes the pipeline_version recorded in search_logs.
+version: 1
+
+retrieval:
+  lexical_k: 100          # candidates from the english + skills full-text leg
+  vector_k: 100           # candidates from the vector leg
+  rrf_k: 60               # reciprocal rank fusion constant
+  fused_k: 100            # fused candidates kept (also the "Load more" pool)
+  vector_mode: exact      # exact (enable_indexscan off) | hnsw (ef_search 200, iterative scan)
+  skill_rank_weight: 0.5  # weight of the skills_tsv rank inside the lexical score
+  set_aside_universe_k: 200
+
+page_size: 20
