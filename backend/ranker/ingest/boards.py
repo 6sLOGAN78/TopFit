@@ -273,7 +273,7 @@ def s(value: object) -> str | None:
     return None
 
 
-def number(value: object) -> float | None:
+def number(value: object, *, maximum: float = MAX_SALARY) -> float | None:
     """A finite, sane, non-negative number or None (bool and overflow-sized values rejected)."""
     if isinstance(value, bool) or not isinstance(value, int | float):
         return None
@@ -281,7 +281,7 @@ def number(value: object) -> float | None:
         v = float(value)
     except OverflowError:
         return None
-    if v != v or v < 0 or v > MAX_SALARY:  # NaN, negative, absurd
+    if v != v or v < 0 or v > maximum:  # NaN, negative, absurd
         return None
     return v
 

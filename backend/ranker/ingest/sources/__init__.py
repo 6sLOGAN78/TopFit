@@ -2,6 +2,8 @@
 
 from . import adzuna as adzuna
 from . import ashby as ashby
+from . import greenhouse as greenhouse
+from . import lever as lever
 from . import remotive as remotive
 from .base import (
     AdapterContext,

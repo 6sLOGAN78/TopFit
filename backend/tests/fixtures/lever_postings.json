@@ -1,0 +1,74 @@
+[
+  {
+    "id": "11111111-1111-4111-8111-111111111101",
+    "text": "Backend Engineer",
+    "categories": {"commitment": "Full-time", "department": "Engineering", "location": "Bengaluru", "team": "Platform", "allLocations": ["Bengaluru", "Pune"]},
+    "country": "IN",
+    "workplaceType": "onsite",
+    "createdAt": 1763640000000,
+    "hostedUrl": "https://jobs.lever.co/acme/11111111-1111-4111-8111-111111111101",
+    "applyUrl": "https://jobs.lever.co/acme/11111111-1111-4111-8111-111111111101/apply",
+    "descriptionPlain": "Build Python and PostgreSQL services.",
+    "description": "<div>Build Python and PostgreSQL services.</div>",
+    "lists": [{"text": "What you will do", "content": "<li>Design APIs</li><li>Own reliability</li>"}],
+    "additionalPlain": "We are an equal opportunity employer.",
+    "salaryRange": {"currency": "INR", "interval": "per-year-salary", "min": 2000000, "max": 3000000}
+  },
+  {
+    "id": "11111111-1111-4111-8111-111111111102",
+    "text": "Frontend Engineer",
+    "categories": {"commitment": "Full-time", "department": "Engineering", "location": "Pune", "allLocations": ["Pune"]},
+    "country": "IN",
+    "workplaceType": "on-site",
+    "createdAt": 1763640000000,
+    "hostedUrl": "https://jobs.lever.co/acme/11111111-1111-4111-8111-111111111102",
+    "descriptionPlain": "React and TypeScript.",
+    "lists": []
+  },
+  {
+    "id": "11111111-1111-4111-8111-111111111103",
+    "text": "Machine Learning Engineer",
+    "categories": {"commitment": "Full-time", "department": "AI", "location": "Remote", "allLocations": ["Remote - India", "Bengaluru"]},
+    "country": "IN",
+    "workplaceType": "remote",
+    "createdAt": 1763640000000,
+    "hostedUrl": "https://jobs.lever.co/acme/11111111-1111-4111-8111-111111111103",
+    "descriptionPlain": "Open to candidates across India. PyTorch and model serving.",
+    "lists": []
+  },
+  {
+    "id": "11111111-1111-4111-8111-111111111104",
+    "text": "Software Engineer",
+    "categories": {"commitment": "Full-time", "department": "Engineering", "location": "Luxembourg", "allLocations": ["Luxembourg"]},
+    "country": "LU",
+    "workplaceType": "onsite",
+    "createdAt": 1763640000000,
+    "hostedUrl": "https://jobs.lever.co/acme/11111111-1111-4111-8111-111111111104",
+    "descriptionPlain": "On site in Luxembourg. Java.",
+    "lists": []
+  },
+  {
+    "id": "11111111-1111-4111-8111-111111111105",
+    "text": "Collections Manager",
+    "categories": {"commitment": "Full-time", "department": "Lending", "location": "Noida", "allLocations": ["Noida"]},
+    "country": "IN",
+    "workplaceType": "onsite",
+    "createdAt": 1763640000000,
+    "hostedUrl": "https://jobs.lever.co/acme/11111111-1111-4111-8111-111111111105",
+    "descriptionPlain": "Manage collections.",
+    "lists": []
+  },
+  {
+    "id": "11111111-1111-4111-8111-111111111106",
+    "text": "Data Engineer",
+    "categories": {"commitment": "Intern", "department": "Data", "location": "Mumbai", "allLocations": ["Mumbai"]},
+    "country": "IN",
+    "workplaceType": "unspecified",
+    "createdAt": 1763640000000,
+    "hostedUrl": "https://jobs.lever.co/acme/11111111-1111-4111-8111-111111111106",
+    "description": "<p>Build <b>Spark</b> pipelines.</p>",
+    "lists": [{"text": "Requirements", "content": "<li>SQL</li>"}],
+    "additional": "<p>Apply now.</p>",
+    "salaryRange": {"currency": "INR", "interval": "per-week-salary", "min": 10, "max": 20}
+  }
+]
