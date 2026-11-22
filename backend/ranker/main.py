@@ -13,6 +13,7 @@ from ranker.api import api_router
 from ranker.api.health import embedding_selfcheck
 from ranker.db import create_engine_from_settings
 from ranker.embeddings import Embedder, build_embedder
+from ranker.llm.client import LLMGateway, build_gateway
 from ranker.observability import RequestLogMiddleware, configure_logging
 from ranker.settings import get_settings
 
@@ -32,6 +33,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         log.error("embedder_load_failed", error_type=type(exc).__name__)
         embedder = None
     app.state.embedder = embedder
+    gateway: LLMGateway | None
+    try:
+        gateway = build_gateway(app.state.engine, settings)
+    except Exception as exc:  # search degrades without the LLM; never fail startup
+        log.error("gateway_init_failed", error_type=type(exc).__name__)
+        gateway = None
+    app.state.gateway = gateway
     # One inference at startup; readyz reports this cached result (CR-01).
     app.state.embedding_check = await embedding_selfcheck(embedder)
     try:
