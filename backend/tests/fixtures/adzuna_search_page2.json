@@ -1,0 +1,19 @@
+{
+  "count": 4,
+  "results": [
+    {
+      "id": "9004",
+      "title": "Backend Engineer",
+      "description": "Go and Postgres ...",
+      "redirect_url": "https://www.adzuna.in/land/ad/9004?se=synthetic",
+      "created": "2026-11-19T12:00:00Z",
+      "company": {"display_name": "Initech", "canonical_name": "initech"},
+      "location": {"display_name": "Pune, Maharashtra", "area": ["India", "Maharashtra", "Pune"]},
+      "category": {"tag": "it-jobs", "label": "IT Jobs"},
+      "salary_min": 900000,
+      "salary_max": 1400000,
+      "salary_is_predicted": 0,
+      "contract_time": "part_time"
+    }
+  ]
+}

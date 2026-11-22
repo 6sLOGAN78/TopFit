@@ -8,3 +8,27 @@ remotive:
   schedule:
     - {hour: 23, minute: 30, batch: morning}
     - {hour: 11, minute: 30}
+
+# Adzuna (plan 02-10). Search API, date-sorted slices, TTL expiry (D-13), redirect_url link back.
+# SET FROM ADR 0001: no paid plan is active (25 test calls only), so calls_per_day is 0 and the
+# adapter makes no calls; enabled stays false until a plan exists. Then set calls_per_day to at
+# most 0.8 x the daily quota, calls_per_month to min(monthly quota, 31 x calls_per_day), and
+# flip enabled to true. Schedule is UTC: 22:00 UTC is 03:30 IST.
+adzuna:
+  enabled: false
+  expiry_policy: ttl
+  country: in
+  results_per_page: 50        # ADR: Adzuna results_per_page
+  salary_period: year         # ADR: Adzuna salary period
+  quota:
+    calls_per_day: 0          # ADR: Adzuna calls/day budget
+    calls_per_month: 0        # min(ADR monthly-derived, 31 x calls_per_day)
+  min_interval_seconds: 2.5
+  ttl_days: 45
+  unseen_days: 30
+  queries:
+    - {name: it, category: it-jobs, sort_by: date, max_days_old: 2, max_pages: 40}
+    - {name: data_ml, what_or: "data scientist machine learning analytics engineer", sort_by: date, max_days_old: 2, max_pages: 5}
+  backfill: {auto: true, max_days_old: 30, max_pages: 200}
+  schedule:
+    - {hour: 22, minute: 0}

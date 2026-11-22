@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     llm_model_agent: str = "claude-sonnet-5-5"
     llm_monthly_budget_usd: float = 5.0
     llm_timeout_seconds: float = 30.0
+    adzuna_app_id: SecretStr | None = None
+    adzuna_app_key: SecretStr | None = None
 
 
 @lru_cache
