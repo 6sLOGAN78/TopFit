@@ -5,7 +5,8 @@ ever placed in the Authorization header; prompts, responses and the key are neve
 """
 
 import asyncio
-from typing import Any
+from decimal import Decimal, InvalidOperation
+from typing import Any, cast
 
 import httpx
 import structlog
@@ -42,6 +43,43 @@ def _retry_delay(resp: httpx.Response | None, attempt: int) -> float:
             except ValueError:
                 pass
     return min(_BACKOFF_S * (2**attempt), _RETRY_AFTER_CAP_S)
+
+
+def _int_or_none(value: Any) -> int | None:
+    try:
+        return None if value is None else int(value)
+    except TypeError, ValueError:
+        return None
+
+
+def _usage_of(body: Any) -> dict[str, Any]:
+    if not isinstance(body, dict):
+        return {}
+    raw: Any = cast(dict[str, Any], body).get("usage")
+    return cast(dict[str, Any], raw) if isinstance(raw, dict) else {}
+
+
+def _billed_usage(usage: dict[str, Any]) -> dict[str, Any]:
+    """Usage from a reply whose content was unusable; failed calls are still billed."""
+    if not usage:
+        return {}
+    details = usage.get("prompt_tokens_details")
+    cached = _int_or_none(details.get("cached_tokens")) if isinstance(details, dict) else None  # pyright: ignore[reportUnknownMemberType]
+    cost: Decimal | None = None
+    raw_cost = usage.get("cost")
+    if raw_cost is not None and not isinstance(raw_cost, bool):
+        try:
+            cost = Decimal(str(raw_cost))
+        except InvalidOperation:
+            cost = None
+        if cost is not None and (not cost.is_finite() or cost < 0):
+            cost = None
+    return {
+        "input_tokens": _int_or_none(usage.get("prompt_tokens")),
+        "output_tokens": _int_or_none(usage.get("completion_tokens")),
+        "cache_read_tokens": cached,
+        "cost_usd": cost,
+    }
 
 
 class OpenRouterProvider:
@@ -128,15 +166,17 @@ class OpenRouterProvider:
             },
         }
         resp = await self._post(payload)
+        body: Any = None
+        usage: dict[str, Any] = {}
         try:
-            body: Any = resp.json()
+            body = resp.json()
+            usage = _usage_of(body)
             choice = body["choices"][0]
             content = choice["message"]["content"]
-            usage: dict[str, Any] = body.get("usage") or {}
             parsed = schema.model_validate_json(content or "")
         except (ValueError, KeyError, IndexError, TypeError, ValidationError) as exc:
             log.warning("openrouter_invalid_output", model=model, error=type(exc).__name__)
-            raise LLMOutputInvalid("openrouter output invalid") from exc
+            raise LLMOutputInvalid("openrouter output invalid", **_billed_usage(usage)) from exc
         details: dict[str, Any] = usage.get("prompt_tokens_details") or {}
         return ParsedResult(
             parsed=parsed,

@@ -230,6 +230,11 @@ class LLMGateway:
                     row_id, user_id, purpose, model, started, LLMUnavailable.__name__, fallback_cost
                 )
                 raise LLMUnavailable("LLM call timed out") from exc
+            except LLMOutputInvalid as exc:
+                # Unusable output can still be billed: charge the reported usage.
+                recorded = True
+                await self._fail_billed(row_id, user_id, purpose, model, started, exc)
+                raise
             except LLMError as exc:
                 # The provider reported a definite failure before returning usage.
                 recorded = True
@@ -286,6 +291,45 @@ class LLMGateway:
             output_tokens=result.output_tokens,
             cache_read_tokens=result.cache_read_tokens,
             cache_write_tokens=result.cache_write_tokens,
+            row_id=row_id,
+        )
+
+    async def _fail_billed(
+        self,
+        row_id: int,
+        user_id: UUID | None,
+        purpose: str,
+        model: str,
+        started: float,
+        exc: LLMOutputInvalid,
+    ) -> None:
+        """Settle an invalid-output call at the larger of token-priced and provider cost."""
+        if not exc.has_usage and exc.cost_usd is None:
+            await self._fail(row_id, user_id, purpose, model, started, type(exc).__name__)
+            return
+        input_tokens = exc.input_tokens or 0
+        output_tokens = exc.output_tokens or 0
+        cache_read = min(exc.cache_read_tokens or 0, input_tokens)
+        # OpenAI-style prompt_tokens include cached tokens; price them at the cache rate.
+        priced = cost_usd(
+            model,
+            input_tokens=input_tokens - cache_read,
+            output_tokens=output_tokens,
+            cache_read_tokens=cache_read,
+        )
+        cost = max(priced, exc.cost_usd or Decimal(0))
+        await self._record(
+            user_id=user_id,
+            purpose=purpose,
+            model=model,
+            success=False,
+            error=type(exc).__name__,
+            cost=cost,
+            latency_ms=int((time.perf_counter() - started) * 1000),
+            input_tokens=exc.input_tokens,
+            output_tokens=exc.output_tokens,
+            cache_read_tokens=exc.cache_read_tokens,
+            cache_write_tokens=None,
             row_id=row_id,
         )
 

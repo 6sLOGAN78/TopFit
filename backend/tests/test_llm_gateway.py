@@ -1,4 +1,5 @@
 import asyncio
+from decimal import Decimal
 from typing import Any
 
 import pytest
@@ -122,6 +123,30 @@ async def test_invalid_output(engine: AsyncEngine) -> None:
     # Tokens were spent: the failure row carries the real cost, not zero.
     assert rows[0]["input_tokens"] == 100
     assert rows[0]["cost_usd"] > 0  # pyright: ignore[reportOperatorIssue]
+
+
+@pytest.mark.usefixtures("clean_db")
+async def test_provider_invalid_output_with_usage_is_charged(engine: AsyncEngine) -> None:
+    exc = LLMOutputInvalid("cut off", input_tokens=1000, output_tokens=100, cache_read_tokens=0)
+    gw, _ = _gateway(engine, FakeProvider({"JobEnrichment": exc}))
+    with pytest.raises(LLMOutputInvalid):
+        await _call(gw)
+    rows = await _rows(engine)
+    assert len(rows) == 1
+    assert rows[0]["success"] is False
+    assert rows[0]["error"] == "LLMOutputInvalid"
+    assert (rows[0]["input_tokens"], rows[0]["output_tokens"]) == (1000, 100)
+    assert rows[0]["cost_usd"] == Decimal("0.00015")  # 1000*0.10 + 100*0.50 per MTok
+
+
+@pytest.mark.usefixtures("clean_db")
+async def test_provider_invalid_output_without_usage_costs_zero(engine: AsyncEngine) -> None:
+    gw, _ = _gateway(engine, FakeProvider({"JobEnrichment": LLMOutputInvalid("bad request")}))
+    with pytest.raises(LLMOutputInvalid):
+        await _call(gw)
+    rows = await _rows(engine)
+    assert rows[0]["cost_usd"] == 0
+    assert rows[0]["input_tokens"] is None
 
 
 @pytest.mark.usefixtures("clean_db")

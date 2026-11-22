@@ -7,10 +7,11 @@ import httpx
 import pytest
 import respx
 from pydantic import SecretStr
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from ranker.llm import cost
-from ranker.llm.client import build_gateway
+from ranker.llm.client import _SPENT_SQL, LLMGateway, build_gateway  # pyright: ignore[reportPrivateUsage]
 from ranker.llm.errors import LLMAuthError, LLMOutputInvalid, LLMUnavailable
 from ranker.llm.providers import openrouter
 from ranker.llm.providers.openrouter import OpenRouterProvider
@@ -204,3 +205,95 @@ async def test_live_job_enrichment(engine: AsyncEngine) -> None:
         est_input_tokens=200,
     )
     assert isinstance(out, JobEnrichment)
+
+
+def _length_cut(cost: float | None = None) -> httpx.Response:
+    """The live failure mode: reasoning used the whole budget and content is None."""
+    usage: dict[str, Any] = {
+        "prompt_tokens": 2000,
+        "completion_tokens": 100,
+        "completion_tokens_details": {"reasoning_tokens": 100},
+    }
+    if cost is not None:
+        usage["cost"] = cost
+    return httpx.Response(
+        200,
+        json={
+            "model": "anthropic/claude-haiku-5.5",
+            "choices": [{"message": {"content": None}, "finish_reason": "length"}],
+            "usage": usage,
+        },
+    )
+
+
+@respx.mock
+async def test_invalid_output_carries_billed_usage() -> None:
+    respx.post(URL).mock(return_value=_length_cut(cost=0.00123))
+    with pytest.raises(LLMOutputInvalid) as exc:
+        await _parse(OpenRouterProvider(SecretStr(KEY), 5.0))
+    assert (exc.value.input_tokens, exc.value.output_tokens) == (2000, 100)
+    assert exc.value.cost_usd == Decimal("0.00123")
+
+
+@respx.mock
+async def test_invalid_output_without_usage_has_none() -> None:
+    respx.post(URL).mock(return_value=httpx.Response(200, json={"choices": []}))
+    with pytest.raises(LLMOutputInvalid) as exc:
+        await _parse(OpenRouterProvider(SecretStr(KEY), 5.0))
+    assert exc.value.has_usage is False and exc.value.cost_usd is None
+
+
+async def _gateway_rows(engine: AsyncEngine) -> tuple[list[dict[str, Any]], Decimal]:
+    async with engine.connect() as conn:
+        res = await conn.execute(text("SELECT * FROM llm_calls ORDER BY id"))
+        rows = [dict(r._mapping) for r in res]  # pyright: ignore[reportPrivateUsage]
+        spent = (await conn.execute(_SPENT_SQL)).scalar_one()
+    return rows, Decimal(spent)
+
+
+async def _gateway_call(engine: AsyncEngine) -> None:
+    settings = get_settings().model_copy(
+        update={
+            "llm_provider": "openrouter",
+            "openrouter_model": "anthropic/claude-haiku-5.5",
+            "openrouter_api_key": SecretStr(KEY),
+        }
+    )
+    gw = LLMGateway(engine, settings, OpenRouterProvider(SecretStr(KEY), 5.0))
+    with pytest.raises(LLMOutputInvalid):
+        await gw.structured(
+            purpose="job_enrich",
+            tier="fast",
+            schema=JobEnrichment,
+            system="s",
+            messages=[{"role": "user", "content": "u"}],
+            max_tokens=100,
+            est_input_tokens=2000,
+        )
+
+
+@respx.mock
+@pytest.mark.usefixtures("clean_db")
+async def test_gateway_charges_invalid_output_by_tokens(engine: AsyncEngine) -> None:
+    respx.post(URL).mock(return_value=_length_cut())
+    await _gateway_call(engine)
+    rows, spent = await _gateway_rows(engine)
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["success"] is False and row["error"] == "LLMOutputInvalid"
+    assert (row["input_tokens"], row["output_tokens"]) == (2000, 100)
+    expected = cost.cost_usd("anthropic/claude-haiku-5.5", input_tokens=2000, output_tokens=100)
+    assert expected > 0
+    assert row["cost_usd"] == expected
+    assert spent == expected
+
+
+@respx.mock
+@pytest.mark.usefixtures("clean_db")
+async def test_gateway_uses_provider_cost_when_larger(engine: AsyncEngine) -> None:
+    respx.post(URL).mock(return_value=_length_cut(cost=0.5))
+    await _gateway_call(engine)
+    rows, spent = await _gateway_rows(engine)
+    assert rows[0]["cost_usd"] == Decimal("0.5")
+    assert rows[0]["input_tokens"] == 2000
+    assert spent == Decimal("0.5")
