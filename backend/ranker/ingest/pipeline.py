@@ -3,13 +3,17 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from functools import partial
 from typing import Any, Literal
 
+import anyio.to_thread
 import structlog
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from ranker.config_loader import load_config
+from ranker.embeddings.embedder import Embedder, build_embedder
+from ranker.embeddings.service import embed_missing
 from ranker.ingest import store
 from ranker.ingest.hashing import content_hash
 from ranker.ingest.normalize.job import NORMALIZER_VERSION, NormalizedJob, ScopeSkip, normalize_job
@@ -54,6 +58,7 @@ class RunSummary:
     skipped: int = 0
     failed: int = 0
     calls_used: int = 0
+    embedded: int = 0
 
 
 def _error(source_job_id: str | None, exc: BaseException) -> dict[str, Any]:
@@ -173,6 +178,7 @@ async def run_ingest(
     *,
     mode: Mode = "incremental",
     adapter: SourceAdapter | None = None,
+    embedder: Embedder | None = None,
 ) -> RunSummary:
     factory = get_adapter_factory(source)  # raises UnknownSource
     config = _source_config(source)
@@ -194,7 +200,7 @@ async def run_ingest(
                 raise RunQuotaReached(source)
         async with engine.begin() as conn:
             run_id = await store.create_run(conn, source, mode, now)
-        return await _run(engine, adapter, source, mode, run_id, now)
+        return await _run(engine, adapter, source, mode, run_id, now, settings, embedder)
     finally:
         await _release_lock(lock_conn, source)
 
@@ -206,6 +212,8 @@ async def _run(
     mode: Mode,
     run_id: int,
     now: datetime,
+    settings: Settings,
+    embedder: Embedder | None,
 ) -> RunSummary:
     summary = RunSummary(source=source, run_id=run_id, status="running")
     errors: list[dict[str, Any]] = []
@@ -233,6 +241,19 @@ async def _run(
             errors.append(_error(None, exc))
         log.warning("ingest_adapter_failed", source=source, error_type=type(exc).__name__)
 
+    # Embedding never fails ingestion: rows keep embedding NULL and the next pass retries (ING-09).
+    embedded = 0
+    embed_failed = False
+    try:
+        if embedder is None:
+            embedder = await anyio.to_thread.run_sync(partial(build_embedder, settings))
+        embedded = await embed_missing(engine, embedder, settings.embed_model)
+    except Exception as exc:
+        embed_failed = True
+        if len(errors) < MAX_ERRORS:
+            errors.append({"source_job_id": None, "error": f"EmbedError:{type(exc).__name__}"})
+        log.warning("ingest_embed_failed", source=source, error_type=type(exc).__name__)
+
     result: FetchResult = adapter.result()
     summary.calls_used = result.calls_used
     summary.failed += result.invalid_items
@@ -241,6 +262,8 @@ async def _run(
     notes["scope_counts"] = result.scope_counts
     notes["failed_scopes"] = result.failed_scopes
     notes["skipped_samples"] = skipped_samples
+    notes["embedded"] = embedded
+    summary.embedded = embedded
     if adapter_failed and yielded == 0:
         summary.status = "failed"
     elif adapter_failed or result.failed_scopes:
@@ -250,6 +273,9 @@ async def _run(
     # A source that failed every scope and produced nothing did not succeed either.
     if summary.status == "partial" and yielded == 0 and not result.complete_scopes:
         summary.status = "failed"
+
+    if embed_failed and summary.status == "succeeded":
+        summary.status = "partial"
 
     async with engine.begin() as conn:
         await store.finish_run(

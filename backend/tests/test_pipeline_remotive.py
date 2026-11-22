@@ -81,7 +81,7 @@ async def test_insert_rerun_and_change(
         assert j["url"].startswith("https://remotive.com/")
         assert j["remote_type"] == "remote"
         assert j["status"] == "active"
-        assert j["embedding"] is None
+        assert j["embedding"] is not None  # embedded in the same run (plan 02-09)
         assert j["company_id"] is not None
         assert j["skills"]
         assert j["first_seen_run_id"] == summary.run_id
