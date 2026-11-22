@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from ranker.ingest.sources import registered_sources
+from ranker.search.models import ErrorResponse
 from ranker.settings import Settings
 from ranker.tasks.queue import enqueue
 
@@ -27,7 +28,16 @@ async def require_admin(
         raise HTTPException(status_code=401, detail="unauthorized")
 
 
-@router.post("/ingest/{source}", status_code=202, dependencies=[Depends(require_admin)])
+@router.post(
+    "/ingest/{source}",
+    status_code=202,
+    dependencies=[Depends(require_admin)],
+    responses={
+        401: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+    },
+)
 async def trigger_ingest(
     request: Request, source: str, mode: Literal["incremental", "backfill"] = "incremental"
 ) -> dict[str, int]:

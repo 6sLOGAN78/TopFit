@@ -8,8 +8,11 @@ import anyio.to_thread
 import structlog
 from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+from scalar_fastapi import get_scalar_api_reference  # pyright: ignore[reportUnknownVariableType]
 
 from ranker.api import api_router
+from ranker.api.errors import install_error_handlers, use_error_envelope_in_openapi
 from ranker.api.health import embedding_selfcheck
 from ranker.db import create_engine_from_settings
 from ranker.embeddings import Embedder, build_embedder
@@ -18,6 +21,9 @@ from ranker.observability import RequestLogMiddleware, configure_logging
 from ranker.settings import get_settings
 
 log = structlog.get_logger("ranker.main")
+
+# Versioned CDN URL, never unversioned (T-03-05).
+SCALAR_JS_URL = "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.82.1"
 
 
 @asynccontextmanager
@@ -50,12 +56,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
 def create_app() -> FastAPI:
     app = FastAPI(
+        title="TopFit API",
         lifespan=lifespan,
-        docs_url="/api/docs",
+        docs_url=None,
         redoc_url=None,
         openapi_url="/api/openapi.json",
     )
     app.include_router(api_router, prefix="/api")
+    install_error_handlers(app)
+    use_error_envelope_in_openapi(app)
+
+    @app.get("/api/docs", include_in_schema=False)
+    async def scalar_docs() -> HTMLResponse:
+        return get_scalar_api_reference(
+            openapi_url=str(app.openapi_url), title="TopFit API", scalar_js_url=SCALAR_JS_URL
+        )
+
     app.add_middleware(RequestLogMiddleware)
     app.add_middleware(CorrelationIdMiddleware)  # last = outermost, request id set first
     return app

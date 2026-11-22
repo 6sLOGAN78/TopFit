@@ -16,6 +16,7 @@ import anyio
 import anyio.to_thread
 import structlog
 from fastapi import APIRouter, Request, Response
+from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -27,6 +28,15 @@ log = structlog.get_logger("ranker.api.health")
 SELFCHECK_TIMEOUT_SECONDS = 30
 
 MIN_VECTOR = (0, 8, 3)
+
+
+class HealthResponse(BaseModel):
+    status: str
+
+
+class ReadyzResponse(BaseModel):
+    status: str
+    checks: dict[str, dict[str, Any]]
 
 
 async def embedding_selfcheck(embedder: Embedder | None) -> dict[str, Any]:
@@ -45,13 +55,13 @@ async def embedding_selfcheck(embedder: Embedder | None) -> dict[str, Any]:
     return {"ok": dim == EMBED_DIM, "dim": dim}
 
 
-@router.get("/healthz")
+@router.get("/healthz", response_model=HealthResponse)
 async def healthz() -> dict[str, str]:
     """Liveness only: no DB or model dependency."""
     return {"status": "ok"}
 
 
-@router.get("/readyz")
+@router.get("/readyz", response_model=ReadyzResponse, responses={503: {"model": ReadyzResponse}})
 async def readyz(request: Request, response: Response) -> dict[str, Any]:
     checks: dict[str, dict[str, Any]] = {}
     engine: AsyncEngine = request.app.state.engine

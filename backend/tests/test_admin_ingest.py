@@ -50,7 +50,11 @@ def test_auth_and_enqueue(make_client: MakeClient, database_url: str) -> None:
         assert isinstance(task_id, int)
         again = c.post(URL, headers={"X-Admin-Token": TOKEN})
     assert again.status_code == 409
-    assert again.json() == {"detail": "already_pending"}
+    assert again.json()["error"] == {
+        "code": "conflict",
+        "message": "already_pending",
+        "details": None,
+    }
     assert _tasks(database_url) == [
         ("ingest", {"source": "remotive", "mode": "incremental"}, "queued")
     ]
