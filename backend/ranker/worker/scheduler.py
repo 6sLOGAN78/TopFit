@@ -30,6 +30,9 @@ MORNING_LATEST_START = time(0, 0)  # 05:30 IST
 TTL_SWEEP = (0, 30)  # 06:00 IST, after the morning batch
 ENRICH_BACKLOG = (1, 30)  # 07:00 IST
 ABANDONED_AFTER_HOURS = 2
+PRUNE_SEARCH_STATE = (2, 0)  # 07:30 IST, daily
+COUNTER_RETENTION_DAYS = 2
+SEARCH_LOG_RETENTION_DAYS = 90
 
 
 async def try_acquire_leader(engine: AsyncEngine) -> AsyncConnection | None:
@@ -65,6 +68,13 @@ def register_core_jobs(
         minutes=1,
         args=[engine, settings.task_lease_seconds],
         id="reap_leases",
+        replace_existing=True,
+    )
+    scheduler.add_job(  # pyright: ignore[reportUnknownMemberType]
+        prune_search_state,
+        _cron(*PRUNE_SEARCH_STATE),
+        args=[engine],
+        id="prune_search_state",
         replace_existing=True,
     )
 
@@ -124,6 +134,26 @@ async def reap_abandoned_runs(engine: AsyncEngine) -> int:
     if reaped:
         log.warning("abandoned_runs_reaped", count=reaped)
     return reaped
+
+
+async def prune_search_state(engine: AsyncEngine) -> tuple[int, int]:
+    """Drop old rate-limit windows and search_logs past retention; returns (counters, logs)."""
+    async with engine.begin() as conn:
+        counters = await conn.execute(
+            text(
+                "DELETE FROM rate_limit_counters "
+                "WHERE window_start < now() - make_interval(days => :d)"
+            ),
+            {"d": COUNTER_RETENTION_DAYS},
+        )
+        logs = await conn.execute(
+            text("DELETE FROM search_logs WHERE created_at < now() - make_interval(days => :d)"),
+            {"d": SEARCH_LOG_RETENTION_DAYS},
+        )
+    n_counters = int(counters.rowcount)  # pyright: ignore[reportAttributeAccessIssue]
+    n_logs = int(logs.rowcount)  # pyright: ignore[reportAttributeAccessIssue]
+    log.info("search_state_pruned", counters=n_counters, search_logs=n_logs)
+    return n_counters, n_logs
 
 
 def _cron(hour: int, minute: int, day_of_week: str | None = None) -> CronTrigger:

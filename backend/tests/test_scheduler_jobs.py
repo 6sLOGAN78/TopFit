@@ -16,7 +16,9 @@ from ranker.worker import scheduler as sched
 from ranker.worker.scheduler import (
     _enqueue_ingest,  # pyright: ignore[reportPrivateUsage]
     build_scheduler,
+    prune_search_state,
     reap_abandoned_runs,
+    register_core_jobs,
     register_source_jobs,
 )
 
@@ -198,6 +200,35 @@ async def test_reaper(engine: AsyncEngine, clean_db: None) -> None:
     assert rows["a"][3] is not None
     assert rows["b"][1] == "running"
     assert rows["b"][3] is None
+
+
+def test_prune_search_state_registered() -> None:
+    scheduler = build_scheduler()
+    register_core_jobs(scheduler, _engine(), _settings())
+    assert scheduler.get_job("prune_search_state") is not None
+
+
+async def test_prune_search_state(engine: AsyncEngine, clean_db: None) -> None:
+    async with engine.begin() as conn:
+        await conn.execute(
+            text(
+                "INSERT INTO rate_limit_counters (bucket, window_start, count) VALUES "
+                "('old', now() - interval '3 days', 1), ('new', now() - interval '1 hour', 1)"
+            )
+        )
+        await conn.execute(
+            text(
+                "INSERT INTO search_logs (pipeline_version, results, latency_ms, created_at) "
+                "VALUES ('v', '[]', 1, now() - interval '91 days'), "
+                "('v', '[]', 1, now() - interval '10 days')"
+            )
+        )
+    assert await prune_search_state(engine) == (1, 1)
+    async with engine.connect() as conn:
+        buckets = [r[0] for r in await conn.execute(text("SELECT bucket FROM rate_limit_counters"))]
+        n_logs = (await conn.execute(text("SELECT count(*) FROM search_logs"))).scalar_one()
+    assert buckets == ["new"]
+    assert n_logs == 1
 
 
 def test_selfcheck_configs(
