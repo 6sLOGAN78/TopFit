@@ -39,7 +39,7 @@ export function SearchPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pt-6 sm:px-6">
       <SearchBar key={state.q} q={state.q} onSearch={search} />
-      <ResultsList state={state} onSearch={search} />
+      <ResultsList key={sp.toString()} state={state} onSearch={search} />
     </div>
   );
 }
