@@ -16,6 +16,7 @@ from ranker.embeddings.embedder import Embedder, build_embedder
 from ranker.embeddings.service import embed_missing
 from ranker.ingest import store
 from ranker.ingest.dedupe import recompute_dedupe
+from ranker.ingest.enrich import enqueue_enrichment
 from ranker.ingest.expiry import (
     ExpiryConfig,
     expire_absent_after_run,
@@ -71,6 +72,7 @@ class RunSummary:
     duplicates_grouped: int = 0
     ghost_flagged: int = 0
     reposts: int = 0
+    enrich_enqueued: int = 0
 
 
 def _error(source_job_id: str | None, exc: BaseException) -> dict[str, Any]:
@@ -401,6 +403,12 @@ async def _run(
         ghost_flagged=summary.ghost_flagged,
         reposts=summary.reposts,
     )
+    # D-11: queue LLM enrichment for this run's unknown fields; never changes the run status.
+    try:
+        stats = await enqueue_enrichment(engine, run_id=run_id)
+        summary.enrich_enqueued = stats.enqueued
+    except Exception as exc:
+        log.warning("enrich_enqueue_failed", source=source, error_type=type(exc).__name__)
     return summary
 
 
