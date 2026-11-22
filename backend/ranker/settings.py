@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     llm_model_agent: str = "claude-sonnet-5-5"
     llm_monthly_budget_usd: float = 5.0
     llm_timeout_seconds: float = 30.0
+    jev_enabled: bool = False
+    jev_model: str = "typesafe/jev-router"
+    jev_reserve_usd: float = 0.001
+    parse_fallback_timeout_seconds: float = 1.2
     adzuna_app_id: SecretStr | None = None
     adzuna_app_key: SecretStr | None = None
     admin_token: SecretStr | None = None

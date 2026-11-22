@@ -59,21 +59,25 @@ def _usage_of(body: Any) -> dict[str, Any]:
     return cast(dict[str, Any], raw) if isinstance(raw, dict) else {}
 
 
+def _cost_of(usage: dict[str, Any]) -> Decimal | None:
+    """OpenRouter's own USD cost for the call, or None when missing or not a sane number."""
+    raw_cost = usage.get("cost")
+    if raw_cost is None or isinstance(raw_cost, bool):
+        return None
+    try:
+        cost = Decimal(str(raw_cost))
+    except InvalidOperation:
+        return None
+    return cost if cost.is_finite() and cost >= 0 else None
+
+
 def _billed_usage(usage: dict[str, Any]) -> dict[str, Any]:
     """Usage from a reply whose content was unusable; failed calls are still billed."""
     if not usage:
         return {}
     details = usage.get("prompt_tokens_details")
     cached = _int_or_none(details.get("cached_tokens")) if isinstance(details, dict) else None  # pyright: ignore[reportUnknownMemberType]
-    cost: Decimal | None = None
-    raw_cost = usage.get("cost")
-    if raw_cost is not None and not isinstance(raw_cost, bool):
-        try:
-            cost = Decimal(str(raw_cost))
-        except InvalidOperation:
-            cost = None
-        if cost is not None and (not cost.is_finite() or cost < 0):
-            cost = None
+    cost = _cost_of(usage)
     return {
         "input_tokens": _int_or_none(usage.get("prompt_tokens")),
         "output_tokens": _int_or_none(usage.get("completion_tokens")),
@@ -186,4 +190,5 @@ class OpenRouterProvider:
             cache_write_tokens=0,
             model=str(body.get("model") or model),
             stop_reason=choice.get("finish_reason"),
+            cost_usd=_cost_of(usage),
         )

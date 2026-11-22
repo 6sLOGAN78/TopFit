@@ -6,6 +6,8 @@ budget before calling, and degrades via LLMUnavailable / BudgetExceeded.
 
 import asyncio
 import time
+from collections.abc import Mapping
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, Literal
 from uuid import UUID
@@ -39,7 +41,8 @@ _INSERT_SQL = text(
     ":cache_write_tokens, :cost_usd, :latency_ms, :success, :error)"
 )
 _UPDATE_SQL = text(
-    "UPDATE llm_calls SET input_tokens = :input_tokens, output_tokens = :output_tokens, "
+    "UPDATE llm_calls SET model = COALESCE(CAST(:model AS text), model), "
+    "input_tokens = :input_tokens, output_tokens = :output_tokens, "
     "cache_read_tokens = :cache_read_tokens, cache_write_tokens = :cache_write_tokens, "
     "cost_usd = :cost_usd, latency_ms = :latency_ms, success = :success, error = :error "
     "WHERE id = :id"
@@ -52,14 +55,50 @@ _RESERVE_SQL = text(
 _BUDGET_LOCK_KEY = 727275
 
 
+@dataclass(frozen=True)
+class ExtraProvider:
+    """A provider selectable per request (``structured(provider=name)``).
+
+    ``reserve_usd`` is for variable-priced routers: a fixed per-call cap is reserved against
+    the budget instead of a token-priced worst case, and the call settles at the provider's
+    reported cost (or at the reserve when none is reported). Without it, the usual price
+    table applies and an unpriced model fails closed.
+    """
+
+    provider: Provider
+    model: str
+    reserve_usd: Decimal | None = None
+
+
 class LLMGateway:
-    def __init__(self, engine: AsyncEngine, settings: Settings, provider: Provider) -> None:
+    def __init__(
+        self,
+        engine: AsyncEngine,
+        settings: Settings,
+        provider: Provider,
+        extra: Mapping[str, ExtraProvider] | None = None,
+    ) -> None:
         self._engine = engine
         self._settings = settings
         self._provider = provider
+        self._extra: dict[str, ExtraProvider] = dict(extra or {})
 
-    def available(self) -> bool:
-        return self._provider.available()
+    def available(self, provider: str | None = None) -> bool:
+        if provider in (None, "haiku"):
+            return self._provider.available()
+        extra = self._extra.get(provider or "")
+        return extra is not None and extra.provider.available()
+
+    def providers(self) -> list[Literal["haiku", "jev"]]:
+        """Parse models offered to the UI; haiku (the default provider) is always first."""
+        out: list[Literal["haiku", "jev"]] = ["haiku"]
+        if self.available("jev"):
+            out.append("jev")
+        return out
+
+    def model_for_provider(self, provider: str | None, tier: Literal["fast", "agent"]) -> str:
+        extra = self._extra.get(provider or "")
+        return extra.model if extra is not None else self._model_for(tier)
 
     def _model_for(self, tier: Literal["fast", "agent"]) -> str:
         if self._settings.llm_provider == "openrouter":
@@ -83,6 +122,7 @@ class LLMGateway:
         cache_read_tokens: int | None = None,
         cache_write_tokens: int | None = None,
         row_id: int | None = None,
+        routed_model: str | None = None,
     ) -> None:
         """Insert the attempt row, or finalise the reservation row when ``row_id`` is given."""
         async with self._engine.begin() as conn:
@@ -103,12 +143,13 @@ class LLMGateway:
                     "latency_ms": latency_ms,
                     "success": success,
                     "error": error,
+                    **({"model": routed_model} if row_id is not None else {}),
                 },
             )
         log.info(
             "llm_call",
             purpose=purpose,
-            model=model,
+            model=routed_model or model,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             cost_usd=float(cost),
@@ -125,6 +166,7 @@ class LLMGateway:
         model: str,
         est_input_tokens: int,
         max_tokens: int,
+        reserve_usd: Decimal | None = None,
     ) -> tuple[int, Decimal]:
         """Reserve the worst-case cost atomically; returns (row id, reserved cost).
 
@@ -133,7 +175,13 @@ class LLMGateway:
         cannot all pass the check.
         """
         try:
-            worst = worst_case_cost(model, est_input_tokens=est_input_tokens, max_tokens=max_tokens)
+            worst = (
+                reserve_usd
+                if reserve_usd is not None
+                else worst_case_cost(
+                    model, est_input_tokens=est_input_tokens, max_tokens=max_tokens
+                )
+            )
         except UnknownModelPrice:
             # Fail closed: an unpriced model cannot be budgeted.
             log.error("llm_unknown_model_price", model=model)
@@ -197,9 +245,18 @@ class LLMGateway:
         max_tokens: int,
         est_input_tokens: int,
         user_id: UUID | None = None,
+        provider: str | None = None,
     ) -> T:
+        prov: Provider = self._provider
+        reserve_usd: Decimal | None = None
         model = self._model_for(tier)
-        if not self.available():
+        if provider not in (None, "haiku"):
+            extra = self._extra.get(provider or "")
+            if extra is None:
+                log.warning("llm_unavailable", purpose=purpose, reason="unknown_provider")
+                raise LLMUnavailable("LLM provider not configured")
+            prov, model, reserve_usd = extra.provider, extra.model, extra.reserve_usd
+        if not prov.available():
             log.warning("llm_unavailable", purpose=purpose, reason="no_provider_key")
             raise LLMUnavailable("LLM provider not configured")
         row_id, fallback_cost = await self._reserve(
@@ -208,6 +265,7 @@ class LLMGateway:
             model=model,
             est_input_tokens=est_input_tokens,
             max_tokens=max_tokens,
+            reserve_usd=reserve_usd,
         )
         started = time.perf_counter()
         recorded = False
@@ -217,7 +275,7 @@ class LLMGateway:
             result: ParsedResult[T] | None = None
             try:
                 async with asyncio.timeout(self._settings.llm_timeout_seconds):
-                    result = await self._provider.parse(
+                    result = await prov.parse(
                         model=model,
                         schema=schema,
                         system=system,
@@ -233,32 +291,48 @@ class LLMGateway:
             except LLMOutputInvalid as exc:
                 # Unusable output can still be billed: charge the reported usage.
                 recorded = True
-                await self._fail_billed(row_id, user_id, purpose, model, started, exc)
+                await self._fail_billed(row_id, user_id, purpose, model, started, exc, reserve_usd)
                 raise
             except LLMError as exc:
                 # The provider reported a definite failure before returning usage.
                 recorded = True
                 await self._fail(row_id, user_id, purpose, model, started, type(exc).__name__)
                 raise
-            real_cost = cost_usd(
-                model,
-                input_tokens=result.input_tokens,
-                output_tokens=result.output_tokens,
-                cache_read_tokens=result.cache_read_tokens,
-                cache_write_tokens=result.cache_write_tokens,
-            )
+            routed: str | None = None
+            if reserve_usd is not None:
+                # Variable-priced router: settle at the reported cost, else at the reserve,
+                # and keep the model it actually routed to next to the router id.
+                real_cost = result.cost_usd if result.cost_usd is not None else reserve_usd
+                if result.model and result.model != model:
+                    routed = f"{model}>{result.model}"
+            else:
+                real_cost = cost_usd(
+                    model,
+                    input_tokens=result.input_tokens,
+                    output_tokens=result.output_tokens,
+                    cache_read_tokens=result.cache_read_tokens,
+                    cache_write_tokens=result.cache_write_tokens,
+                )
             try:
                 parsed = schema.model_validate(result.parsed.model_dump())
             except (ValidationError, AttributeError) as exc:
                 # Tokens were spent even though the output is unusable.
                 recorded = True
                 await self._record_result(
-                    row_id, user_id, purpose, model, started, result, real_cost, "LLMOutputInvalid"
+                    row_id,
+                    user_id,
+                    purpose,
+                    model,
+                    started,
+                    result,
+                    real_cost,
+                    "LLMOutputInvalid",
+                    routed,
                 )
                 raise LLMOutputInvalid("schema validation failed") from exc
             recorded = True
             await self._record_result(
-                row_id, user_id, purpose, model, started, result, real_cost, None
+                row_id, user_id, purpose, model, started, result, real_cost, None, routed
             )
             return parsed
         finally:
@@ -278,6 +352,7 @@ class LLMGateway:
         result: ParsedResult[Any],
         cost: Decimal,
         error: str | None,
+        routed_model: str | None = None,
     ) -> None:
         await self._record(
             user_id=user_id,
@@ -292,6 +367,7 @@ class LLMGateway:
             cache_read_tokens=result.cache_read_tokens,
             cache_write_tokens=result.cache_write_tokens,
             row_id=row_id,
+            routed_model=routed_model,
         )
 
     async def _fail_billed(
@@ -302,6 +378,7 @@ class LLMGateway:
         model: str,
         started: float,
         exc: LLMOutputInvalid,
+        reserve_usd: Decimal | None = None,
     ) -> None:
         """Settle an invalid-output call at the larger of token-priced and provider cost."""
         if not exc.has_usage and exc.cost_usd is None:
@@ -310,14 +387,17 @@ class LLMGateway:
         input_tokens = exc.input_tokens or 0
         output_tokens = exc.output_tokens or 0
         cache_read = min(exc.cache_read_tokens or 0, input_tokens)
-        # OpenAI-style prompt_tokens include cached tokens; price them at the cache rate.
-        priced = cost_usd(
-            model,
-            input_tokens=input_tokens - cache_read,
-            output_tokens=output_tokens,
-            cache_read_tokens=cache_read,
-        )
-        cost = max(priced, exc.cost_usd or Decimal(0))
+        if reserve_usd is not None:
+            cost = exc.cost_usd if exc.cost_usd is not None else reserve_usd
+        else:
+            # OpenAI-style prompt_tokens include cached tokens; price them at the cache rate.
+            priced = cost_usd(
+                model,
+                input_tokens=input_tokens - cache_read,
+                output_tokens=output_tokens,
+                cache_read_tokens=cache_read,
+            )
+            cost = max(priced, exc.cost_usd or Decimal(0))
         await self._record(
             user_id=user_id,
             purpose=purpose,
@@ -373,4 +453,14 @@ def build_gateway(engine: AsyncEngine, settings: Settings) -> LLMGateway:
         from ranker.llm.providers.anthropic import AnthropicProvider
 
         provider = AnthropicProvider(settings.anthropic_api_key, settings.llm_timeout_seconds)
-    return LLMGateway(engine, settings, provider)
+    extra: dict[str, ExtraProvider] = {}
+    key = settings.openrouter_api_key
+    if settings.jev_enabled and key is not None and key.get_secret_value():
+        from ranker.llm.providers.jev import JevProvider
+
+        extra["jev"] = ExtraProvider(
+            JevProvider(key, settings.llm_timeout_seconds, settings.openrouter_base_url),
+            settings.jev_model,
+            Decimal(str(settings.jev_reserve_usd)),
+        )
+    return LLMGateway(engine, settings, provider, extra)
