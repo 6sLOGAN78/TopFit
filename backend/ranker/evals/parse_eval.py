@@ -22,8 +22,8 @@ from ranker.search.models import ParseModel
 from ranker.search.parse import QueryParse, parse_query
 from ranker.settings import Settings
 
-Variant = Literal["rules", "haiku", "jev"]
-VARIANTS: tuple[Variant, ...] = ("rules", "haiku", "jev")
+ParseVariant = Literal["rules", "haiku", "jev"]
+VARIANTS: tuple[ParseVariant, ...] = ("rules", "haiku", "jev")
 FILTER_FIELDS = ("city", "min_salary", "work_mode", "seniority")
 ALL_FIELDS = (*FILTER_FIELDS, "role_family")
 PURPOSE = "query_parse"
@@ -162,7 +162,7 @@ def _percentile(values: list[float], pct: float) -> float:
 
 
 async def _run_variant(
-    variant: Variant,
+    variant: ParseVariant,
     cases: list[ParseCase],
     engine: AsyncEngine,
     gateway: LLMGateway,
@@ -240,7 +240,7 @@ async def run_parse_eval(
     gateway: LLMGateway,
     settings: Settings,
     cases: list[ParseCase],
-    variants: list[Variant],
+    variants: list[ParseVariant],
 ) -> ParseEvalReport:
     results = [await _run_variant(v, cases, engine, gateway, settings) for v in variants]
     return ParseEvalReport(n_queries=len(cases), results=results)

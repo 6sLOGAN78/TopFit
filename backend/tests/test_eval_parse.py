@@ -7,7 +7,9 @@ from typing import Any
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine
+from typer.testing import CliRunner
 
+from ranker import cli
 from ranker.cli import EVAL_DATA_DIR
 from ranker.evals.parse_eval import (
     ParseCase,
@@ -161,3 +163,83 @@ async def test_failed_model_call_counts_as_degraded_not_error(engine: AsyncEngin
     report = await run_parse_eval(engine, gw, get_settings(), CASES, ["haiku"])
     assert report.results[0].model_calls_degraded == 2
     assert "| haiku |" in report_markdown(report)
+
+
+runner = CliRunner()
+
+
+def _tiny_gold(tmp_path: Path) -> Path:
+    lines = GOLD_FILE.read_text(encoding="utf-8").splitlines()[:3]
+    path = tmp_path / "q.jsonl"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
+def test_cli_parse_requires_yes_for_model_variants(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", "postgresql+psycopg://unused/unused")
+    res = runner.invoke(cli.app, ["eval", "parse", "--queries", str(_tiny_gold(tmp_path))])
+    assert res.exit_code == 2
+    assert "ConfirmationRequired" in res.output and '"estimated_model_calls": 6' in res.output
+    bad = runner.invoke(cli.app, ["eval", "parse", "--variants", "gpt"])
+    assert bad.exit_code == 2 and "UnknownVariant" in bad.output
+    missing = runner.invoke(cli.app, ["eval", "parse", "--queries", str(tmp_path / "nope")])
+    assert missing.exit_code == 2
+
+
+def test_cli_parse_runs_rules_haiku_and_reports_jev_not_run(
+    tmp_path: Path, database_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    get_settings.cache_clear()
+    fake = _fake()
+
+    def fake_gateway(engine: AsyncEngine, settings: Any) -> LLMGateway:
+        return LLMGateway(engine, settings, fake)
+
+    monkeypatch.setattr("ranker.llm.client.build_gateway", fake_gateway)
+    out = tmp_path / "result.json"
+    res = runner.invoke(
+        cli.app,
+        [
+            "eval",
+            "parse",
+            "--queries",
+            str(_tiny_gold(tmp_path)),
+            "--out",
+            str(out),
+            "--yes",
+        ],
+    )
+    get_settings.cache_clear()
+    assert res.exit_code == 0, res.output
+    saved = json.loads(out.read_text(encoding="utf-8"))["report"]
+    by_variant = {r["variant"]: r for r in saved["results"]}
+    assert by_variant["rules"]["status"] == "ok"
+    assert by_variant["haiku"]["status"] == "ok" and len(fake.calls) == 3
+    assert by_variant["jev"]["status"] == "not run"
+    assert by_variant["jev"]["reason"] == "jev provider not configured"
+    assert "| haiku |" in res.output
+
+
+def test_cli_parse_rules_only_needs_no_confirmation(
+    tmp_path: Path, database_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    get_settings.cache_clear()
+    res = runner.invoke(
+        cli.app,
+        [
+            "eval",
+            "parse",
+            "--queries",
+            str(_tiny_gold(tmp_path)),
+            "--variants",
+            "rules",
+            "--out",
+            str(tmp_path / "r.json"),
+        ],
+    )
+    get_settings.cache_clear()
+    assert res.exit_code == 0, res.output
