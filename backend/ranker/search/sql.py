@@ -169,6 +169,42 @@ def compile_filters(f: SearchFilters) -> CompiledFilters:
     return CompiledFilters(clauses, params)
 
 
+def build_set_aside_sql(clauses: dict[SetAsideKey, str], legs: Legs = "both") -> TextClause:
+    """Per-filter set-aside and relax counts over an unfiltered relevance universe (UI-06).
+
+    The universe is the union of the unfiltered lexical and vector top ``:lex_k`` / ``:vec_k``
+    (callers pass ``set_aside_universe_k`` for both). For each active clause ``k``:
+    ``sa_k`` counts universe rows failing ``k``; ``rx_k`` counts rows failing only ``k``, which
+    is how many jobs removing that single filter would add. Binds are the retrieval binds plus
+    the compiled filter params.
+    """
+    ctes: list[str] = []
+    members: list[str] = []
+    if legs in ("both", "lex"):
+        ctes += [_Q_CTE, _LEX_CTE.format(filter_sql="").strip()]
+        members.append("SELECT id FROM lex")
+    if legs in ("both", "vec"):
+        ctes.append(_VEC_CTE.format(filter_sql="").strip())
+        members.append("SELECT id FROM vec")
+    ctes.append("universe AS (" + " UNION ".join(members) + ")")
+    cols = ["count(*) AS universe"]
+    for key in _CLAUSE_ORDER:
+        if key not in clauses:
+            continue
+        fail = f"NOT coalesce(({clauses[key]}), false)"
+        others = [f"coalesce(({c}), false)" for k, c in clauses.items() if k != key]
+        cols.append(f"count(*) FILTER (WHERE {fail}) AS sa_{key}")
+        cols.append(f"count(*) FILTER (WHERE {' AND '.join([fail, *others])}) AS rx_{key}")
+    sql = (
+        "WITH "
+        + ",\n".join(ctes)
+        + "\nSELECT "
+        + ", ".join(cols)
+        + " FROM jobs j JOIN universe u ON u.id = j.id"
+    )
+    return text(sql)
+
+
 async def apply_vector_mode(conn: AsyncConnection, mode: Literal["exact", "hnsw"]) -> None:
     """Transaction-local planner settings via set_config (SET cannot take bind parameters)."""
     stmt = text("SELECT set_config(:k, :v, true)")
