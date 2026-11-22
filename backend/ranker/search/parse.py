@@ -109,6 +109,8 @@ class QueryParse:
     cached: bool = False
     degraded: bool = False
     prompt_version: str = PROMPT_VERSION
+    # Set only by a model answer; no filter or search path reads it (D-17 measures it).
+    role_family: str | None = None
 
 
 @dataclass(frozen=True)
@@ -532,13 +534,17 @@ async def _model_fallback(
     gateway: LLMGateway | None,
     parse_model: ParseModel,
     settings: Settings,
+    force_fallback: bool = False,
 ) -> QueryParse | None:
     """Fill still-unset filters from a model when the residue looks like an unparsed filter.
 
     Gated on the residue, cached by (normalised model input, provider, model), time-boxed, and
     never fatal: any failure returns the rules-only parse with ``degraded=True``.
+
+    ``force_fallback`` (D-17 measurement only) sends the whole query to the model, skipping
+    the residue gate and the cache so every query measures the model itself.
     """
-    fragment = _fallback_input(parse, q)
+    fragment = q if force_fallback else _fallback_input(parse, q)
     if fragment is None:
         return None
     if gateway is None or not gateway.available():
@@ -552,7 +558,7 @@ async def _model_fallback(
     answer: QueryParseFallback | None = None
     cached = False
     try:
-        if engine is not None:
+        if engine is not None and not force_fallback:
             async with engine.connect() as conn:
                 hit = (await conn.execute(_CACHE_GET, cache_params)).scalar_one_or_none()
             if hit is not None:
@@ -570,7 +576,7 @@ async def _model_fallback(
                     est_input_tokens=_FALLBACK_EST_INPUT_TOKENS,
                     provider=provider,
                 )
-            if engine is not None:
+            if engine is not None and not force_fallback:
                 async with engine.begin() as conn:
                     await conn.execute(
                         _CACHE_PUT, {**cache_params, "r": json.dumps(answer.model_dump())}
@@ -580,9 +586,10 @@ async def _model_fallback(
         return replace(parse, degraded=True)
     refined, used = _apply_answer(parse, answer, provider)
     if not used:
-        return replace(parse, cached=cached)
+        return replace(parse, cached=cached, role_family=answer.role_family)
     return replace(
         refined,
+        role_family=answer.role_family,
         parse_source="rules+jev" if provider == "jev" else "rules+haiku",
         cached=cached,
     )
@@ -597,6 +604,7 @@ async def parse_query(
     gateway: LLMGateway | None,
     parse_model: ParseModel,
     settings: Settings,
+    force_fallback: bool = False,
 ) -> QueryParse:
     """Rules parse of ``q`` merged with explicit filters.
 
@@ -615,7 +623,13 @@ async def parse_query(
         filters, sources = _merge(base.filters, explicit)
         base = replace(base, filters=filters, chips=_chips(filters, sources))
     refined = await _model_fallback(
-        base, q, engine=engine, gateway=gateway, parse_model=parse_model, settings=settings
+        base,
+        q,
+        engine=engine,
+        gateway=gateway,
+        parse_model=parse_model,
+        settings=settings,
+        force_fallback=force_fallback,
     )
     return refined or base
 
