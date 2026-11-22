@@ -126,6 +126,75 @@ jobs:
           uvx schemathesis==4.33.4 run http://127.0.0.1:8000/api/openapi.json
           --checks not_a_server_error,status_code_conformance,content_type_conformance,response_schema_conformance
 
+  # Ranking-quality gate (EVAL-08). Needs the private snapshot; skips cleanly without the token.
+  eval-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      db:
+        image: pgvector/pgvector:0.8.7-pg18-trixie
+        env:
+          POSTGRES_PASSWORD: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:ci@127.0.0.1:5432/postgres
+      SESSION_SECRET: ci-eval-gate-secret-00000000000000000000000000000000
+      EMBEDDER: fastembed
+      LLM_PROVIDER: fake
+      APP_ENV: test
+      COOKIE_SECURE: "false"
+      FASTEMBED_CACHE_PATH: ${{ github.workspace }}/.fastembed-cache
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Fetch private snapshot
+        id: snapshot
+        env:
+          GH_TOKEN: ${{ secrets.EVAL_DATA_TOKEN }}
+          EVAL_DATA_REPO: ${{ vars.EVAL_DATA_REPO }}
+        run: |
+          if [ -z "$GH_TOKEN" ] || [ -z "$EVAL_DATA_REPO" ]; then
+            echo "::notice::Ranking eval skipped: EVAL_DATA_TOKEN not available (fork or no access)"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          mkdir -p evals/data
+          gh release download snapshot-v1 -R "$EVAL_DATA_REPO" -p 'job_pool_snapshot.jsonl.gz' -D evals/data
+          (cd evals/data && sha256sum -c snapshot.sha256)
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+      - if: steps.snapshot.outputs.skip != 'true'
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          version: "0.9.18"
+          enable-cache: true
+          working-directory: backend
+      - if: steps.snapshot.outputs.skip != 'true'
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: .fastembed-cache
+          key: fastembed-${{ runner.os }}-bge-small-en-v1.5
+      - name: Sync dependencies
+        if: steps.snapshot.outputs.skip != 'true'
+        working-directory: backend
+        run: uv sync --frozen
+      - name: Migrate
+        if: steps.snapshot.outputs.skip != 'true'
+        working-directory: backend
+        run: uv run alembic upgrade head
+      - name: Load snapshot
+        if: steps.snapshot.outputs.skip != 'true'
+        working-directory: backend
+        run: uv run ranker eval snapshot load --gz ../evals/data/job_pool_snapshot.jsonl.gz
+      - name: Ranking eval gate
+        if: steps.snapshot.outputs.skip != 'true'
+        working-directory: backend
+        run: uv run ranker eval ranking --mode no-llm --baseline ../evals/baseline.json --max-drop 0.02
+
   deploy-config:
     runs-on: ubuntu-24.04
     timeout-minutes: 10

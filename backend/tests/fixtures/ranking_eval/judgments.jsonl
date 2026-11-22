@@ -1,0 +1,6 @@
+{"persona_id": "p1", "job_id": 1, "grade": 3, "graded_by": "fixture", "reviewed": false, "human_grade": null, "rubric_version": "t1"}
+{"persona_id": "p1", "job_id": 2, "grade": 2, "graded_by": "fixture", "reviewed": false, "human_grade": null, "rubric_version": "t1"}
+{"persona_id": "p1", "job_id": 3, "grade": 0, "graded_by": "fixture", "reviewed": false, "human_grade": null, "rubric_version": "t1"}
+{"persona_id": "p2", "job_id": 2, "grade": 2, "graded_by": "fixture", "reviewed": true, "human_grade": 3, "rubric_version": "t1"}
+{"persona_id": "p2", "job_id": 1, "grade": 2, "graded_by": "fixture", "reviewed": false, "human_grade": null, "rubric_version": "t1"}
+{"persona_id": "p3", "job_id": 4, "grade": 3, "graded_by": "fixture", "reviewed": false, "human_grade": null, "rubric_version": "t1"}
