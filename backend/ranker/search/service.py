@@ -6,7 +6,6 @@ ranking signals on this path without changing the response contract.
 """
 
 import json
-import re
 import time
 from collections import OrderedDict
 from collections.abc import Sequence
@@ -22,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from ranker.embeddings.embedder import Embedder
 from ranker.embeddings.service import vector_literal
-from ranker.ingest.skills import SkillMatcher, default_matcher
+from ranker.ingest.skills import default_matcher
 from ranker.llm.client import LLMGateway
 from ranker.search.config import RankingConfig, pipeline_version, ranking_config
 from ranker.search.models import (
@@ -32,6 +31,7 @@ from ranker.search.models import (
     SearchFilters,
     SearchResponse,
 )
+from ranker.search.parse import lex_text_for
 from ranker.search.sql import (
     HYDRATE_SQL,
     Legs,
@@ -57,9 +57,6 @@ SOURCE_DISPLAY_NAMES = {
     "ashby": "Ashby",
     "hn": "Hacker News",
 }
-
-_EDGE_PUNCT = ",;:()[]\"'"
-_SYMBOL_CHARS = re.compile(r"[+#.]")
 
 _INSERT_LOG = text(
     "INSERT INTO search_logs (guest_id, surface, query_text, filters, parse, pipeline_version, "
@@ -101,22 +98,6 @@ class _EmbedCache:
 
 
 _embed_cache = _EmbedCache(EMBED_CACHE_SIZE)
-
-
-def lex_text_for(q: str, matcher: SkillMatcher | None = None) -> str:
-    """Query text for the english leg with symbol skills removed.
-
-    ``C++`` would otherwise tokenise to ``c`` and OR-match every C job; those skills are
-    matched through the simple-config skills leg instead.
-    """
-    m = matcher or default_matcher()
-    kept: list[str] = []
-    for word in q.split():
-        bare = word.strip(_EDGE_PUNCT)
-        if bare and _SYMBOL_CHARS.search(bare) and m.extract(bare):
-            continue
-        kept.append(word)
-    return " ".join(kept)
 
 
 async def _embed(embedder: Embedder, model: str, query: str) -> list[float]:
@@ -307,4 +288,4 @@ async def search(
     )
 
 
-__all__ = ["SearchRequest", "search", "source_display_name"]
+__all__ = ["SearchRequest", "lex_text_for", "search", "source_display_name"]

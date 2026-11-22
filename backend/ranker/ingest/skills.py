@@ -31,6 +31,7 @@ MAX_TEXT_CHARS = 20_000
 CONTEXT_WINDOW = 40
 LIST_WINDOW = 200
 MAX_WEAK_TRIES = 5
+QUERY_OK_MAX_TOKENS = 8
 
 Category = Literal[
     "language",
@@ -76,6 +77,9 @@ class SkillEntry(BaseModel):
     context: list[str] = Field(default_factory=list)
     implies: list[str] = Field(default_factory=list)
     token: str | None = None
+    # Short search queries ("remote go jobs") accept this ambiguous skill's aliases without
+    # context, case-insensitively. Ingestion is unaffected.
+    query_ok: bool = False
 
 
 class SkillsConfig(BaseModel):
@@ -88,6 +92,8 @@ class SkillsConfig(BaseModel):
     def _check(self) -> SkillsConfig:
         canonicals: set[str] = set()
         for entry in self.skills:
+            if entry.query_ok and not entry.ambiguous:
+                raise ValueError(f"{entry.canonical}: query_ok requires ambiguous")
             if entry.canonical in canonicals:
                 raise ValueError(f"duplicate canonical {entry.canonical}")
             canonicals.add(entry.canonical)
@@ -157,6 +163,12 @@ class SkillMatcher:
                 rec = _Alias(alias, entry.canonical, cs, weak, ctx if weak else [])
                 self._records[(alias if cs else alias.lower(), cs, weak)] = rec
                 groups.setdefault((weak, cs), []).append(alias)
+        self._query_ok: dict[str, str] = {}
+        for entry in config.skills:
+            if entry.query_ok:
+                for alias in entry.aliases:
+                    self._query_ok[alias.lower()] = entry.canonical
+        self._query_ok_pattern = _compile(list(self._query_ok), cs=False)
         self._patterns: list[tuple[bool, bool, re.Pattern[str]]] = []
         for (weak, cs), aliases in groups.items():
             pat = _compile(aliases, cs=cs)
@@ -165,6 +177,22 @@ class SkillMatcher:
 
     def token(self, canonical: str) -> str:
         return self._tokens.get(canonical) or _default_token(canonical)
+
+    def query_ok_canonical(self, word: str) -> str | None:
+        """Canonical skill for a ``query_ok`` alias spelled exactly as ``word`` (any case)."""
+        return self._query_ok.get(word.lower())
+
+    def extract_query(self, text: str) -> list[str]:
+        """Like ``extract`` for short search queries: ``query_ok`` aliases need no context."""
+        found = set(self.extract(text))
+        pat = self._query_ok_pattern
+        if pat is not None and len(text.split()) <= QUERY_OK_MAX_TOKENS:
+            for m in pat.finditer(text[:MAX_TEXT_CHARS]):
+                canonical = self._query_ok.get(m.group(1).lower())
+                if canonical:
+                    found.add(canonical)
+                    found.update(self._implies.get(canonical, []))
+        return sorted(found)
 
     def extract(self, text: str) -> list[str]:
         text = text[:MAX_TEXT_CHARS]

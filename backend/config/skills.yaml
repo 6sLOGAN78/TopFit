@@ -6,6 +6,9 @@
 # - `aliases` of an ambiguous entry only count with a context match or inside a skills list;
 #   `strong_aliases` always match (case-insensitive).
 # - `case_sensitive: true` makes `aliases` match exactly.
+# - `query_ok: true` (ambiguous entries only) lets short search queries (8 words or fewer, see
+#   SkillMatcher.extract_query) match the aliases without context, case-insensitively, so
+#   "remote go jobs" finds Go. Ingestion ignores it.
 provenance:
   - >-
     Programming-language names and common aliases follow the naming used by GitHub Linguist
@@ -33,11 +36,13 @@ skills:
     case_sensitive: true
     aliases: ["C"]
     strong_aliases: ["C language", "C programming"]
+    query_ok: true
   - canonical: go
     category: language
     ambiguous: true
     case_sensitive: true
     aliases: ["Go"]
+    query_ok: true
     strong_aliases: ["Golang", "Go lang", "Go programming"]
     context: ['\bin Go\b', '\bGo (?:developer|engineer|programmer|microservices?|services?|backend|concurrency|routines?)\b', '\bwith Go\b', '\busing Go\b', '\(Go\)', '\bGo/']
     token: golang
@@ -47,6 +52,7 @@ skills:
     case_sensitive: true
     aliases: ["R"]
     strong_aliases: ["R language", "R programming", "RStudio"]
+    query_ok: true
     context: ['\bR (?:programming|language|packages?|studio|markdown|shiny)\b', '\bin R\b', '\busing R\b']
   - {canonical: rust, category: language, ambiguous: true, case_sensitive: true, aliases: ["Rust"], strong_aliases: ["Rustlang", "Rust lang"], context: ['(?i:cargo|tokio|systems programming|memory safe|rust developer|rust engineer|\bin rust\b|rust programming)']}
   - {canonical: kotlin, category: language}
@@ -130,6 +136,7 @@ skills:
     category: framework
     ambiguous: true
     aliases: ["node"]
+    query_ok: true
     strong_aliases: ["Node.js", "NodeJS", "Node JS"]
     context: ['(?i:npm|express|backend|server-side|\bjs\b|javascript|typescript|nestjs)']
   - canonical: express

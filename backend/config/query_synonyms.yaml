@@ -1,0 +1,33 @@
+# Query-time vocabulary for the rules parser (ranker/search/parse.py). Loaded via load_config.
+#
+# synonyms: whole-word, case-insensitive replacements applied to the query before parsing and
+#   before embedding, so "SDE 2" and "software engineer" retrieve the same jobs. Each entry maps
+#   its aliases onto the canonical phrase.
+# stopwords: filler words dropped from the lexical and embedding text and never reported as
+#   unread words ("residue"). Quote "on" and "no": bare, YAML reads them as booleans.
+# role_words: words that name a role or field. They stay in the ranking text, never become
+#   filters (D-05), and are not reported as residue. Any other leftover word (for example a
+#   place name the city list does not know) is residue, which the model fallback may read.
+synonyms:
+  - {canonical: "software engineer", aliases: ["sde", "swe", "sdet"]}
+  - {canonical: "frontend", aliases: ["front-end", "front end"]}
+  - {canonical: "backend", aliases: ["back-end", "back end"]}
+  - {canonical: "machine learning", aliases: ["ml"]}
+  - {canonical: "full stack", aliases: ["fullstack", "full-stack"]}
+
+stopwords:
+  [a, an, and, any, at, for, in, is, it, job, jobs, least, looking, me, minimum, min, near,
+   of, ok, okay, "on", opening, openings, or, package, position, positions, preferably, role,
+   roles, salary, show, the, to, want, with, work, ctc, above, around, fine, also, i, my,
+   find, hiring, vacancy, vacancies, based, only, over, upto, paying, pay, "no", not]
+
+role_words:
+  [engineer, engineers, engineering, developer, developers, programmer, analyst, analytics,
+   scientist, architect, designer, manager, consultant, tester, testing, qa, sre, devops, data,
+   software, backend, frontend, full, stack, machine, learning, mobile, android, ios, web,
+   cloud, platform, product, security, infrastructure, systems, application, applications,
+   research, ai, nlp, ops, support, sales, marketing, content, writer, recruiter, lead,
+   senior, junior, intern, internship, fresher, freshers, trainee, staff, principal,
+   associate, graduate, entry, level, technical, solutions, specialist, executive, admin,
+   administrator, database, dba, etl, bi, embedded, firmware, game, blockchain, quality,
+   assurance, automation, integration, reliability, site, generalist]
