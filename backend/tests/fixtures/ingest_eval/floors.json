@@ -1,0 +1,17 @@
+{
+  "normalizer_version": "1",
+  "measured_on": "2026-11-22",
+  "floor_rule": "measured accuracy minus 0.05, rounded down to 2 decimals",
+  "fields": {
+    "in_scope": 0.86,
+    "remote_type": 0.83,
+    "onsite_days_per_week": 0.83,
+    "remote_eligibility": 0.61,
+    "seniority": 0.83,
+    "employment_type": 0.95,
+    "salary": 0.95,
+    "city": 0.95,
+    "country_code": 0.83,
+    "industry": 0.39
+  }
+}

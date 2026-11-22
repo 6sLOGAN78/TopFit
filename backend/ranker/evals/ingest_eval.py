@@ -44,7 +44,9 @@ class EvalSetError(ValueError):
 class GoldLabels(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    in_scope: bool
+    # None = ambiguous from the posting text (e.g. foreign location, work mode not stated):
+    # the record is excluded from every metric.
+    in_scope: bool | None
     remote_type: RemoteType = "unknown"
     onsite_days_per_week: int | None = None
     remote_eligibility: RemoteEligibility = "unknown"
@@ -160,6 +162,8 @@ def _tally(tallies: _Tallies, field: str, *, correct: bool, predicted: bool) -> 
 
 
 def _score_one(rec: EvalRecord, tallies: _Tallies) -> None:
+    if rec.gold.in_scope is None:
+        return
     pred = normalize_job(rec.raw)
     predicted_in_scope = isinstance(pred, NormalizedJob)
     _tally(tallies, "in_scope", correct=predicted_in_scope == rec.gold.in_scope, predicted=True)

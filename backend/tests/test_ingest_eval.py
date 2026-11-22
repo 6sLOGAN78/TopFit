@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -238,3 +239,40 @@ def test_runs_report_prints_quality_counters(
         6,
     )
     get_settings.cache_clear()
+
+
+def test_ambiguous_scope_gold_is_excluded_from_every_metric() -> None:
+    skip = _raw("Marketing Manager")
+    report = score_normalisation([_rec(skip, GoldLabels(in_scope=None))])
+    assert report.n == 1 and report.fields == {}
+
+
+FIXTURE_DIR = Path(__file__).parent / "fixtures" / "ingest_eval"
+# Internshala is absent: its first request returned a bot-challenge page on 2026-11-22 and the
+# fetcher stops there by design (D-15). Adzuna has no keys (ADR 0001).
+EXPECTED_SOURCES = {"greenhouse", "ashby", "lever", "arbeitnow", "remoteok", "remotive", "jobicy"}
+
+
+def test_real_eval_set_is_complete_and_scrubbed() -> None:
+    path = FIXTURE_DIR / "postings.jsonl"
+    records = load_eval_set(path)
+    assert len(records) >= 75
+    assert {r.raw.source for r in records} == EXPECTED_SOURCES
+    assert sum(r.gold.in_scope is False for r in records) >= 10
+    assert sum(r.gold.in_scope is True for r in records) >= 8
+    assert all(r.labelled_by for r in records)
+    assert all(len(r.raw.description_raw) <= 3000 for r in records)
+    blob = path.read_text(encoding="utf-8")
+    assert not re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", blob)
+
+
+def test_normalisation_meets_recorded_floors() -> None:
+    floors = json.loads((FIXTURE_DIR / "floors.json").read_text())["fields"]
+    report = score_normalisation(load_eval_set(FIXTURE_DIR / "postings.jsonl"))
+    assert set(floors) == set(report.fields)
+    below = {
+        f: (report.fields[f].accuracy, floor)
+        for f, floor in floors.items()
+        if report.fields[f].accuracy < floor
+    }
+    assert not below, f"accuracy below floor (measured, floor): {below}"
