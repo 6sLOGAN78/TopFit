@@ -13,3 +13,9 @@ models:
     output: 10.00
     cache_write_5m: 2.50
     cache_read: 0.10
+  # Same model via OpenRouter (https://openrouter.ai/anthropic/claude-haiku-5.5), checked 2026-11-22.
+  anthropic/claude-haiku-5.5:
+    input: 0.10
+    output: 0.50
+    cache_write_5m: 0.125
+    cache_read: 0.01
