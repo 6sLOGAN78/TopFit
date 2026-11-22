@@ -1,3 +1,6 @@
+import asyncio
+from typing import Any
+
 import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -116,6 +119,42 @@ async def test_invalid_output(engine: AsyncEngine) -> None:
     rows = await _rows(engine)
     assert rows[0]["success"] is False
     assert rows[0]["error"] == "LLMOutputInvalid"
+    # Tokens were spent: the failure row carries the real cost, not zero.
+    assert rows[0]["input_tokens"] == 100
+    assert rows[0]["cost_usd"] > 0  # pyright: ignore[reportOperatorIssue]
+
+
+@pytest.mark.usefixtures("clean_db")
+async def test_timeout_records_worst_case_cost(engine: AsyncEngine) -> None:
+    class Slow(FakeProvider):
+        async def parse(self, **kwargs: Any) -> Any:  # pyright: ignore[reportIncompatibleMethodOverride]
+            await asyncio.sleep(5)
+
+    gw, _ = _gateway(engine, Slow(), llm_timeout_seconds=0.05)
+    with pytest.raises(LLMUnavailable):
+        await _call(gw)
+    rows = await _rows(engine)
+    assert len(rows) == 1
+    assert rows[0]["success"] is False
+    assert rows[0]["cost_usd"] > 0  # pyright: ignore[reportOperatorIssue]
+
+
+@pytest.mark.usefixtures("clean_db")
+async def test_cancellation_still_writes_row(engine: AsyncEngine) -> None:
+    class Slow(FakeProvider):
+        async def parse(self, **kwargs: Any) -> Any:  # pyright: ignore[reportIncompatibleMethodOverride]
+            await asyncio.sleep(5)
+
+    gw, _ = _gateway(engine, Slow())
+    task = asyncio.create_task(_call(gw))
+    await asyncio.sleep(0.2)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    rows = await _rows(engine)
+    assert len(rows) == 1
+    assert rows[0]["error"] == "Cancelled"
+    assert rows[0]["cost_usd"] > 0  # pyright: ignore[reportOperatorIssue]
 
 
 @pytest.mark.usefixtures("clean_db")

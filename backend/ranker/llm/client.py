@@ -7,7 +7,7 @@ budget before calling, and degrades via LLMUnavailable / BudgetExceeded.
 import asyncio
 import time
 from decimal import Decimal
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 import structlog
@@ -23,7 +23,7 @@ from ranker.llm.errors import (
     LLMUnavailable,
     UnknownModelPrice,
 )
-from ranker.llm.providers import MessageParam, Provider
+from ranker.llm.providers import MessageParam, ParsedResult, Provider
 from ranker.settings import Settings
 
 log = structlog.get_logger("ranker.llm")
@@ -156,50 +156,92 @@ class LLMGateway:
             max_tokens=max_tokens,
         )
         started = time.perf_counter()
+        recorded = False
+        # Usage is unknown until the provider returns: assume the worst case, so that a
+        # timeout or cancellation after tokens were spent still counts against the cap.
+        fallback_cost = worst_case_cost(
+            model, est_input_tokens=est_input_tokens, max_tokens=max_tokens
+        )
         try:
-            async with asyncio.timeout(self._settings.llm_timeout_seconds):
-                result = await self._provider.parse(
-                    model=model,
-                    schema=schema,
-                    system=system,
-                    messages=messages,
-                    max_tokens=max_tokens,
+            result: ParsedResult[T] | None = None
+            try:
+                async with asyncio.timeout(self._settings.llm_timeout_seconds):
+                    result = await self._provider.parse(
+                        model=model,
+                        schema=schema,
+                        system=system,
+                        messages=messages,
+                        max_tokens=max_tokens,
+                    )
+            except TimeoutError as exc:
+                recorded = True
+                await self._fail(
+                    user_id, purpose, model, started, LLMUnavailable.__name__, fallback_cost
                 )
+                raise LLMUnavailable("LLM call timed out") from exc
+            except LLMError as exc:
+                # The provider reported a definite failure before returning usage.
+                recorded = True
+                await self._fail(user_id, purpose, model, started, type(exc).__name__)
+                raise
+            real_cost = cost_usd(
+                model,
+                input_tokens=result.input_tokens,
+                output_tokens=result.output_tokens,
+                cache_read_tokens=result.cache_read_tokens,
+                cache_write_tokens=result.cache_write_tokens,
+            )
             try:
                 parsed = schema.model_validate(result.parsed.model_dump())
             except (ValidationError, AttributeError) as exc:
+                # Tokens were spent even though the output is unusable.
+                recorded = True
+                await self._record_result(
+                    user_id, purpose, model, started, result, real_cost, "LLMOutputInvalid"
+                )
                 raise LLMOutputInvalid("schema validation failed") from exc
-        except TimeoutError as exc:
-            await self._fail(user_id, purpose, model, started, LLMUnavailable.__name__)
-            raise LLMUnavailable("LLM call timed out") from exc
-        except LLMError as exc:
-            await self._fail(user_id, purpose, model, started, type(exc).__name__)
-            raise
-        latency_ms = int((time.perf_counter() - started) * 1000)
-        cost = cost_usd(
-            model,
-            input_tokens=result.input_tokens,
-            output_tokens=result.output_tokens,
-            cache_read_tokens=result.cache_read_tokens,
-            cache_write_tokens=result.cache_write_tokens,
-        )
+            recorded = True
+            await self._record_result(user_id, purpose, model, started, result, real_cost, None)
+            return parsed
+        finally:
+            if not recorded:
+                # Cancellation or an unexpected error: write the row even if we are cancelled.
+                await asyncio.shield(
+                    self._fail(user_id, purpose, model, started, "Cancelled", fallback_cost)
+                )
+
+    async def _record_result(
+        self,
+        user_id: UUID | None,
+        purpose: str,
+        model: str,
+        started: float,
+        result: ParsedResult[Any],
+        cost: Decimal,
+        error: str | None,
+    ) -> None:
         await self._record(
             user_id=user_id,
             purpose=purpose,
             model=model,
-            success=True,
-            error=None,
+            success=error is None,
+            error=error,
             cost=cost,
-            latency_ms=latency_ms,
+            latency_ms=int((time.perf_counter() - started) * 1000),
             input_tokens=result.input_tokens,
             output_tokens=result.output_tokens,
             cache_read_tokens=result.cache_read_tokens,
             cache_write_tokens=result.cache_write_tokens,
         )
-        return parsed
 
     async def _fail(
-        self, user_id: UUID | None, purpose: str, model: str, started: float, error: str
+        self,
+        user_id: UUID | None,
+        purpose: str,
+        model: str,
+        started: float,
+        error: str,
+        cost: Decimal = Decimal(0),
     ) -> None:
         await self._record(
             user_id=user_id,
@@ -207,6 +249,7 @@ class LLMGateway:
             model=model,
             success=False,
             error=error,
+            cost=cost,
             latency_ms=int((time.perf_counter() - started) * 1000),
         )
 
