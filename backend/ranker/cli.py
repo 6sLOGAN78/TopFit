@@ -37,6 +37,16 @@ from ranker.evals.ingest_eval import (
     report_markdown,
     score_normalisation,
 )
+from ranker.evals.parse_eval import (
+    VARIANTS as PARSE_VARIANTS,
+)
+from ranker.evals.parse_eval import (
+    ParseEvalError,
+    ParseVariant,
+    load_parse_cases,
+    run_parse_eval,
+)
+from ranker.evals.parse_eval import report_markdown as parse_markdown
 from ranker.evals.ranking_eval import (
     VARIANTS,
     RankingEvalError,
@@ -723,6 +733,81 @@ def snapshot_load_cmd(
     configure_logging(get_settings().log_level)
     sha_file = sha256_file or gz.parent / SHA_NAME
     raise typer.Exit(asyncio.run(_snapshot_load(gz, sha_file, replace)))
+
+
+async def _eval_parse(queries: Path, variants: list[str], out: Path | None) -> int:
+    from ranker.llm.client import build_gateway
+
+    cases = load_parse_cases(queries)
+    settings = get_settings()
+    engine = create_engine_from_settings(settings)
+    try:
+        report = await run_parse_eval(
+            engine,
+            build_gateway(engine, settings),
+            settings,
+            cases,
+            cast("list[ParseVariant]", variants),
+        )
+    finally:
+        await engine.dispose()
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    target = out or EVAL_RESULTS_DIR / f"parse_{stamp}.json"
+    payload: dict[str, object] = {"timestamp": stamp, "report": report.model_dump(mode="json")}
+    await anyio.to_thread.run_sync(_write_json, target, payload)
+    typer.echo(json.dumps(payload))
+    typer.echo(parse_markdown(report))
+    return 0
+
+
+def _write_json(target: Path, payload: dict[str, object]) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+@eval_app.command("parse")
+def eval_parse_cmd(
+    queries: Annotated[Path, typer.Option(help="Gold queries JSONL")] = EVAL_DATA_DIR
+    / "parse_queries.jsonl",
+    variants: Annotated[str, typer.Option(help="Comma list of rules,haiku,jev")] = ",".join(
+        PARSE_VARIANTS
+    ),
+    out: Annotated[Path | None, typer.Option(help="Result JSON; default evals/results")] = None,
+    yes: Annotated[bool, typer.Option("--yes", help="Allow paid model calls")] = False,
+) -> None:
+    """Compare rules, rules+Haiku and rules+Jev query parsing (D-17). Model variants cost money."""
+
+    def usage(error: str, **extra: str) -> typer.Exit:
+        typer.echo(json.dumps({"error": error, **extra}), err=True)
+        return typer.Exit(EXIT_USAGE)
+
+    chosen = [v.strip() for v in variants.split(",") if v.strip()]
+    unknown = [v for v in chosen if v not in PARSE_VARIANTS]
+    if not chosen or unknown:
+        raise usage("UnknownVariant", variants=",".join(unknown or [variants]))
+    if not queries.is_file():
+        raise usage("FileNotFound", path=str(queries))
+    try:
+        cases = load_parse_cases(queries)
+    except ParseEvalError as exc:
+        raise usage("InvalidFixture", detail=str(exc)) from None
+    model_variants = [v for v in chosen if v != "rules"]
+    if model_variants and not yes:
+        calls = len(cases) * len(model_variants)
+        typer.echo(
+            json.dumps(
+                {
+                    "error": "ConfirmationRequired",
+                    "estimated_model_calls": calls,
+                    "variants": model_variants,
+                    "hint": "re-run with --yes to spend LLM budget",
+                }
+            ),
+            err=True,
+        )
+        raise typer.Exit(EXIT_USAGE)
+    configure_logging(get_settings().log_level)
+    raise typer.Exit(asyncio.run(_eval_parse(queries, chosen, out)))
 
 
 @runs_app.command("report")
