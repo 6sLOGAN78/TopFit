@@ -117,7 +117,7 @@ Plans:
      - runnable against the fake provider in tests
 
      Background jobs enqueued in `tasks` are picked up by the worker exactly once, using `SKIP LOCKED`.
-**Plans:** 17 plans
+**Plans:** 15/17 plans executed
 
 Plans:
 **Wave 1**
@@ -127,40 +127,40 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-03-PLAN.md — LLM gateway: fake + Anthropic providers, llm_calls logging, $5 monthly budget, typed schemas, content-block pass-through (FND-06)
-- [ ] 02-04-PLAN.md — Location (+ on-site days, D-19), remote-eligibility and tech/geo scope rules + ADR 0002 (NORM-02, NORM-03)
-- [ ] 02-05-PLAN.md — Salary/FX, seniority/employment, company normalisers and D-19 dealbreaker rules (visa, relocation, industry, stage, size) + ADR 0003 (NORM-04, NORM-05, NORM-07)
-- [ ] 02-06-PLAN.md — ≥ 400-skill taxonomy + matcher and description cleaner (NORM-06, NORM-01)
+- [x] 02-03-PLAN.md — LLM gateway: fake + Anthropic providers, llm_calls logging, $5 monthly budget, typed schemas, content-block pass-through (FND-06)
+- [x] 02-04-PLAN.md — Location (+ on-site days, D-19), remote-eligibility and tech/geo scope rules + ADR 0002 (NORM-02, NORM-03)
+- [x] 02-05-PLAN.md — Salary/FX, seniority/employment, company normalisers and D-19 dealbreaker rules (visa, relocation, industry, stage, size) + ADR 0003 (NORM-04, NORM-05, NORM-07)
+- [x] 02-06-PLAN.md — ≥ 400-skill taxonomy + matcher and description cleaner (NORM-06, NORM-01)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-07-PLAN.md — Remotive slice part 1: jobs-index migration (with D-18/D-19/D-20 columns), SourceAdapter contract, retrying HTTP with honest UA and per-attempt counting, Remotive adapter (ING-01, ING-04, ING-07)
+- [x] 02-07-PLAN.md — Remotive slice part 1: jobs-index migration (with D-18/D-19/D-20 columns), SourceAdapter contract, retrying HTTP with honest UA and per-attempt counting, Remotive adapter (ING-01, ING-04, ING-07)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 02-08-PLAN.md — Remotive slice part 2: normalize_job (incl. dealbreaker fields), hashing, idempotent upsert, ingest_runs lifecycle with in_scope counter, `ranker ingest` (ING-05, ING-06, ING-11)
+- [x] 02-08-PLAN.md — Remotive slice part 2: normalize_job (incl. dealbreaker fields), hashing, idempotent upsert, ingest_runs lifecycle with in_scope counter, `ranker ingest` (ING-05, ING-06, ING-11)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 02-09-PLAN.md — Embeddings in every run + `ranker embed` backfill, change-only re-embed (SRCH-01, ING-09)
-- [ ] 02-10-PLAN.md — Adzuna adapter within the measured quota (every retry counted), auto-backfill, key redaction; ships disabled while the budget is 0 (ING-02)
-- [ ] 02-12-PLAN.md — LLM fallback enrichment tasks with cache, no-key deferral and a 7-day outage deferral cap (NORM-03/05, D-08, D-11)
+- [x] 02-09-PLAN.md — Embeddings in every run + `ranker embed` backfill, change-only re-embed (SRCH-01, ING-09)
+- [x] 02-10-PLAN.md — Adzuna adapter within the measured quota (every retry counted), auto-backfill, key redaction; ships disabled while the budget is 0 (ING-02)
+- [x] 02-12-PLAN.md — LLM fallback enrichment tasks with cache, no-key deferral and a 7-day outage deferral cap (NORM-03/05, D-08, D-11)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 02-11-PLAN.md — Expiry (absence/TTL) with 50% volume guard, cross-source duplicate grouping, repost/ghost signals with run counters, `purge-source` (ING-08, D-18)
+- [x] 02-11-PLAN.md — Expiry (absence/TTL) with 50% volume guard, cross-source duplicate grouping, repost/ghost signals with run counters, `purge-source` (ING-08, D-18)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 02-13-PLAN.md — Scheduled sources in the leader worker with the D-17 morning-read window, ingest/TTL handlers, admin trigger endpoint, config self-check, memory limits (OPS-02, ING-11)
+- [x] 02-13-PLAN.md — Scheduled sources in the leader worker with the D-17 morning-read window, ingest/TTL handlers, admin trigger endpoint, config self-check, memory limits (OPS-02, ING-11)
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 02-14-PLAN.md — Greenhouse, Lever and Ashby boards with India-heavy seeds from the spike, seed sync on every fetch and guarded discovery (ING-13)
+- [x] 02-14-PLAN.md — Greenhouse, Lever and Ashby boards with India-heavy seeds from the spike, seed sync on every fetch and guarded discovery (ING-13)
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 02-16-PLAN.md — Arbeitnow, RemoteOK, Jobicy API adapters and the D-15 Internshala listing-page adapter with a polite robots-aware fetcher (D-14, D-15)
+- [x] 02-16-PLAN.md — Arbeitnow, RemoteOK, Jobicy API adapters and the D-15 Internshala listing-page adapter with a polite robots-aware fetcher (D-14, D-15)
 
 **Wave 10** *(blocked on Wave 9 completion)*
 

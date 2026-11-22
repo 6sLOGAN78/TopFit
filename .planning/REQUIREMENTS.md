@@ -26,15 +26,15 @@
 - [ ] **ING-01** [MVP]: System ingests Remotive jobs at most 4 times/day, honouring its terms (attribution, no signup wall in front of its jobs)
 - [ ] **ING-02** [MVP]: System ingests Adzuna India jobs within the measured daily quota (search terms × cities × pages budgeted in `config/sources.yaml`)
 - [ ] **ING-03**: System ingests the monthly HN "Who is hiring" thread and turns top-level comments into structured job records via the LLM gateway, cached by comment ID and hash
-- [ ] **ING-04** [MVP]: Each source is a plugin implementing one `SourceAdapter` interface; adding a source touches only `ingest/sources/`
+- [x] **ING-04** [MVP]: Each source is a plugin implementing one `SourceAdapter` interface; adding a source touches only `ingest/sources/`
 - [ ] **ING-05** [MVP]: Ingestion is idempotent: re-running a batch leaves the database unchanged (upsert on `source, source_job_id`; `content_hash` detects changes)
 - [ ] **ING-06** [MVP]: Every run is recorded in `ingest_runs` with fetched / inserted / updated / unchanged / expired / failed counts and errors
 - [ ] **ING-07** [MVP]: Source calls retry with exponential backoff and jitter on 429/5xx (max 5 tries)
-- [ ] **ING-08** [MVP]: Jobs expire by per-source rules: "not seen in 2 complete runs" only for sources fetched in full; age-based (30–45 days) for quota-capped sources like Adzuna; 45 days after thread date for HN. No expiry happens when a run fetched under 50% of its normal volume
+- [x] **ING-08** [MVP]: Jobs expire by per-source rules: "not seen in 2 complete runs" only for sources fetched in full; age-based (30–45 days) for quota-capped sources like Adzuna; 45 days after thread date for HN. No expiry happens when a run fetched under 50% of its normal volume
 - [ ] **ING-09** [MVP]: Embeddings and skills are recomputed only when `content_hash` changes
 - [ ] **ING-10**: Cross-source duplicates collapse to one canonical job; the dedupe key keeps seniority (junior and senior roles at the same company stay separate); when a canonical job expires, the next duplicate is promoted
 - [ ] **ING-11** [MVP]: Admin can trigger one source from the CLI (`ranker ingest <source>`) or an admin endpoint
-- [ ] **ING-12** [MVP]: Production index holds a target number of active tech jobs set in ING-00 (aim ≥ 10k; record the real achievable number if the sources can't reach it)
+- [x] **ING-12** [MVP]: Production index holds a target number of active tech jobs set in ING-00 (aim ≥ 10k; record the real achievable number if the sources can't reach it)
 - [ ] **ING-13**: System ingests public Greenhouse/Lever job boards for a curated company list (pulled into v1 if ING-00 shows the job-count target can't be reached otherwise)
 
 ### Normalisation (NORM)
@@ -214,15 +214,15 @@ Deferred. Tracked but not in the current roadmap.
 | ING-01 | Phase 2 | Pending |
 | ING-02 | Phase 2 | Pending |
 | ING-03 | Phase 6 | Pending |
-| ING-04 | Phase 2 | Pending |
+| ING-04 | Phase 2 | Complete |
 | ING-05 | Phase 2 | Pending |
 | ING-06 | Phase 2 | Pending |
 | ING-07 | Phase 2 | Pending |
-| ING-08 | Phase 2 | Pending |
+| ING-08 | Phase 2 | Complete |
 | ING-09 | Phase 2 | Pending |
 | ING-10 | Phase 6 | Pending |
 | ING-11 | Phase 2 | Pending |
-| ING-12 | Phase 2 | Pending |
+| ING-12 | Phase 2 | Complete |
 | ING-13 | Phase 2 | Pending |
 | NORM-01 | Phase 2 | Pending |
 | NORM-02 | Phase 2 | Pending |
