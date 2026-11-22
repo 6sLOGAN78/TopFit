@@ -28,7 +28,7 @@
 - [ ] **ING-03**: System ingests the monthly HN "Who is hiring" thread and turns top-level comments into structured job records via the LLM gateway, cached by comment ID and hash
 - [x] **ING-04** [MVP]: Each source is a plugin implementing one `SourceAdapter` interface; adding a source touches only `ingest/sources/`
 - [ ] **ING-05** [MVP]: Ingestion is idempotent: re-running a batch leaves the database unchanged (upsert on `source, source_job_id`; `content_hash` detects changes)
-- [ ] **ING-06** [MVP]: Every run is recorded in `ingest_runs` with fetched / inserted / updated / unchanged / expired / failed counts and errors
+- [x] **ING-06** [MVP]: Every run is recorded in `ingest_runs` with fetched / inserted / updated / unchanged / expired / failed counts and errors
 - [ ] **ING-07** [MVP]: Source calls retry with exponential backoff and jitter on 429/5xx (max 5 tries)
 - [x] **ING-08** [MVP]: Jobs expire by per-source rules: "not seen in 2 complete runs" only for sources fetched in full; age-based (30–45 days) for quota-capped sources like Adzuna; 45 days after thread date for HN. No expiry happens when a run fetched under 50% of its normal volume
 - [ ] **ING-09** [MVP]: Embeddings and skills are recomputed only when `content_hash` changes
@@ -40,10 +40,10 @@
 ### Normalisation (NORM)
 
 - [ ] **NORM-01** [MVP]: Descriptions are stripped to clean text (`description_clean`), keeping the raw version; job HTML is never rendered raw in the UI
-- [ ] **NORM-02** [MVP]: Location is normalised to city, country and remote type, with Indian aliases (Bangalore → Bengaluru, Gurgaon → Gurugram, NCR → Delhi/Gurugram/Noida)
-- [ ] **NORM-03** [MVP]: Each job has `remote_eligibility` (regions it is open to, e.g. worldwide / India / APAC / US-only / unknown); US- or EU-only remote jobs do not count as remote matches for an India-based user by default
-- [ ] **NORM-04** [MVP]: Salary is parsed (₹12–18 LPA, lakh, $120k–150k, monthly) into min/max/currency/period and INR annual; Adzuna predicted salaries are flagged and treated as estimates
-- [ ] **NORM-05** [MVP]: Seniority and employment type are inferred by rules, with LLM fallback only when rules return unknown
+- [x] **NORM-02** [MVP]: Location is normalised to city, country and remote type, with Indian aliases (Bangalore → Bengaluru, Gurgaon → Gurugram, NCR → Delhi/Gurugram/Noida)
+- [x] **NORM-03** [MVP]: Each job has `remote_eligibility` (regions it is open to, e.g. worldwide / India / APAC / US-only / unknown); US- or EU-only remote jobs do not count as remote matches for an India-based user by default
+- [x] **NORM-04** [MVP]: Salary is parsed (₹12–18 LPA, lakh, $120k–150k, monthly) into min/max/currency/period and INR annual; Adzuna predicted salaries are flagged and treated as estimates
+- [x] **NORM-05** [MVP]: Seniority and employment type are inferred by rules, with LLM fallback only when rules return unknown
 - [ ] **NORM-06** [MVP]: Skills are extracted against a curated taxonomy (≥ 400 canonical skills with aliases), handling C++, C#, Go, .NET and Node.js correctly
 - [ ] **NORM-07** [MVP]: Company names are normalised into a `companies` table
 
@@ -216,7 +216,7 @@ Deferred. Tracked but not in the current roadmap.
 | ING-03 | Phase 6 | Pending |
 | ING-04 | Phase 2 | Complete |
 | ING-05 | Phase 2 | Pending |
-| ING-06 | Phase 2 | Pending |
+| ING-06 | Phase 2 | Complete |
 | ING-07 | Phase 2 | Pending |
 | ING-08 | Phase 2 | Complete |
 | ING-09 | Phase 2 | Pending |
@@ -225,10 +225,10 @@ Deferred. Tracked but not in the current roadmap.
 | ING-12 | Phase 2 | Complete |
 | ING-13 | Phase 2 | Pending |
 | NORM-01 | Phase 2 | Pending |
-| NORM-02 | Phase 2 | Pending |
-| NORM-03 | Phase 2 | Pending |
-| NORM-04 | Phase 2 | Pending |
-| NORM-05 | Phase 2 | Pending |
+| NORM-02 | Phase 2 | Complete |
+| NORM-03 | Phase 2 | Complete |
+| NORM-04 | Phase 2 | Complete |
+| NORM-05 | Phase 2 | Complete |
 | NORM-06 | Phase 2 | Pending |
 | NORM-07 | Phase 2 | Pending |
 | SRCH-01 | Phase 2 | Pending |

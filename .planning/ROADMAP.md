@@ -117,7 +117,7 @@ Plans:
      - runnable against the fake provider in tests
 
      Background jobs enqueued in `tasks` are picked up by the worker exactly once, using `SKIP LOCKED`.
-**Plans:** 15/17 plans executed
+**Plans:** 16/17 plans executed
 
 Plans:
 **Wave 1**
@@ -164,7 +164,7 @@ Plans:
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 02-17-PLAN.md — Ingestion evals: ~100 labelled real postings, `ranker eval ingest` with a CI floor, `ranker runs report` (D-20)
+- [x] 02-17-PLAN.md — Ingestion evals: ~100 labelled real postings, `ranker eval ingest` with a CI floor, `ranker runs report` (D-20)
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
