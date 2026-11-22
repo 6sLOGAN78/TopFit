@@ -1,0 +1,168 @@
+# Hand-curated Indian city aliases (no external dataset). Matching is token based and
+# case-insensitive; dots are ignored ("U.S." == "us"). The canonical name is always an
+# implicit alias.
+#
+# Decision (Mumbai): Navi Mumbai and Thane keep their own canonicals (people filter on them
+# separately) and share the `mumbai` metro group with Mumbai.
+cities:
+  - canonical: Bengaluru
+    aliases: [bangalore, blr, bengaluru urban, bangalore urban, bangalore rural, bengaluru rural]
+    state: Karnataka
+    country: IN
+  - canonical: Mumbai
+    aliases: [bombay, greater mumbai]
+    state: Maharashtra
+    country: IN
+    metro: mumbai
+  - canonical: Navi Mumbai
+    aliases: [navimumbai]
+    state: Maharashtra
+    country: IN
+    metro: mumbai
+  - canonical: Thane
+    aliases: [thane west]
+    state: Maharashtra
+    country: IN
+    metro: mumbai
+  - canonical: Delhi
+    aliases: [new delhi, delhi city]
+    state: Delhi
+    country: IN
+    metro: ncr
+  - canonical: Gurugram
+    aliases: [gurgaon]
+    state: Haryana
+    country: IN
+    metro: ncr
+  - canonical: Noida
+    aliases: [greater noida]
+    state: Uttar Pradesh
+    country: IN
+    metro: ncr
+  - canonical: Hyderabad
+    aliases: [secunderabad, cyberabad]
+    state: Telangana
+    country: IN
+  - canonical: Chennai
+    aliases: [madras]
+    state: Tamil Nadu
+    country: IN
+  - canonical: Kolkata
+    aliases: [calcutta]
+    state: West Bengal
+    country: IN
+  - canonical: Pune
+    aliases: [poona]
+    state: Maharashtra
+    country: IN
+  - canonical: Ahmedabad
+    aliases: [amdavad]
+    state: Gujarat
+    country: IN
+  - canonical: Kochi
+    aliases: [cochin, ernakulam]
+    state: Kerala
+    country: IN
+  - canonical: Thiruvananthapuram
+    aliases: [trivandrum]
+    state: Kerala
+    country: IN
+  - canonical: Coimbatore
+    aliases: [kovai]
+    state: Tamil Nadu
+    country: IN
+  - canonical: Jaipur
+    aliases: []
+    state: Rajasthan
+    country: IN
+  - canonical: Chandigarh
+    aliases: [mohali, panchkula, sas nagar]
+    state: Chandigarh
+    country: IN
+  - canonical: Indore
+    aliases: []
+    state: Madhya Pradesh
+    country: IN
+  - canonical: Bhubaneswar
+    aliases: [bhubaneshwar]
+    state: Odisha
+    country: IN
+  - canonical: Visakhapatnam
+    aliases: [vizag, vishakhapatnam]
+    state: Andhra Pradesh
+    country: IN
+  - canonical: Nagpur
+    aliases: []
+    state: Maharashtra
+    country: IN
+  - canonical: Lucknow
+    aliases: []
+    state: Uttar Pradesh
+    country: IN
+  - canonical: Mysuru
+    aliases: [mysore]
+    state: Karnataka
+    country: IN
+
+# One alias expands to several canonical cities (first is the primary city).
+multi:
+  ncr: [Delhi, Gurugram, Noida]
+  delhi ncr: [Delhi, Gurugram, Noida]
+  ncr delhi: [Delhi, Gurugram, Noida]
+  national capital region: [Delhi, Gurugram, Noida]
+
+# Phrases that mean "somewhere in India" (country IN, no city).
+country_any: [pan india, multiple locations, anywhere in india, across india, india, bharat]
+
+# Non-India countries (alias -> ISO 3166-1 alpha-2) plus India itself.
+countries:
+  usa: US
+  us: US
+  united states: US
+  united states of america: US
+  america: US
+  uk: GB
+  united kingdom: GB
+  england: GB
+  great britain: GB
+  london: GB
+  germany: DE
+  berlin: DE
+  france: FR
+  paris: FR
+  spain: ES
+  portugal: PT
+  italy: IT
+  poland: PL
+  netherlands: NL
+  amsterdam: NL
+  luxembourg: LU
+  ireland: IE
+  dublin: IE
+  switzerland: CH
+  sweden: SE
+  canada: CA
+  toronto: CA
+  australia: AU
+  sydney: AU
+  singapore: SG
+  uae: AE
+  united arab emirates: AE
+  dubai: AE
+  saudi arabia: SA
+  mexico: MX
+  brazil: BR
+  japan: JP
+  china: CN
+  philippines: PH
+  indonesia: ID
+  malaysia: MY
+  israel: IL
+  nigeria: NG
+  south africa: ZA
+  kenya: KE
+  egypt: EG
+  pakistan: PK
+  bangladesh: BD
+  sri lanka: LK
+  nepal: NP
