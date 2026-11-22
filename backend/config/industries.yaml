@@ -1,0 +1,165 @@
+# Hand-curated company -> industry/stage/size map for D-19 dealbreaker fields.
+# Provenance: written by hand on 2026-11-22 from the companies' own public product/About
+# descriptions as generally known; no third-party dataset, nothing scraped. Stage and size are
+# filled only where well known, otherwise omitted (omitted = unknown). Keys are the output of
+# ranker.ingest.normalize.company.normalize_company_name. Review before launch.
+companies:
+  - {normalized_name: cred, industry: fintech, stage: late}
+  - {normalized_name: meesho, industry: ecommerce}
+  - {normalized_name: paytm, industry: fintech, stage: public}
+  - {normalized_name: zeta, industry: fintech}
+  - {normalized_name: zeta suite directi, industry: fintech}
+  - {normalized_name: slice, industry: fintech}
+  - {normalized_name: jupiter, industry: fintech}
+  - {normalized_name: upgrad, industry: edtech}
+  - {normalized_name: inmobi, industry: adtech}
+  - {normalized_name: groww, industry: fintech, stage: public}
+  - {normalized_name: zerodha, industry: fintech}
+  - {normalized_name: swiggy, industry: consumer_internet, stage: public}
+  - {normalized_name: phonepe, industry: fintech, stage: late}
+  - {normalized_name: sharechat, industry: media}
+  - {normalized_name: dream11, industry: gaming, stage: late}
+  - {normalized_name: razorpay, industry: fintech, stage: late}
+  - {normalized_name: razorpay software, industry: fintech, stage: late}
+  - {normalized_name: freshworks, industry: saas, stage: public}
+  - {normalized_name: browserstack, industry: devtools, stage: late}
+  - {normalized_name: postman, industry: devtools, stage: late}
+  - {normalized_name: unacademy, industry: edtech}
+  - {normalized_name: rapido, industry: mobility}
+  - {normalized_name: zepto, industry: ecommerce}
+  - {normalized_name: urbancompany, industry: consumer_internet}
+  - {normalized_name: urban company, industry: consumer_internet}
+  - {normalized_name: gitlab, industry: devtools, stage: public}
+  - {normalized_name: automattic, industry: saas}
+  - {normalized_name: canonical, industry: devtools, stage: late}
+  - {normalized_name: toptal, industry: hrtech}
+  - {normalized_name: deel, industry: hrtech, stage: late}
+  - {normalized_name: remotecom, industry: hrtech}
+  - {normalized_name: remote com, industry: hrtech}
+  - {normalized_name: hashicorp, industry: devtools}
+  - {normalized_name: coindcx, industry: crypto}
+  - {normalized_name: lenskart, industry: ecommerce}
+  - {normalized_name: cleartax, industry: fintech}
+  - {normalized_name: whatfix, industry: saas}
+  - {normalized_name: chargebee, industry: saas, stage: late}
+  - {normalized_name: druva, industry: cybersecurity, stage: late}
+  - {normalized_name: uniphore, industry: ai_ml, stage: late}
+  - {normalized_name: sprinklr, industry: saas, stage: public}
+  - {normalized_name: clevertap, industry: saas}
+  - {normalized_name: mindtickle, industry: saas}
+  - {normalized_name: cashfree, industry: fintech}
+  - {normalized_name: cashfree payments, industry: fintech}
+  - {normalized_name: juspay, industry: fintech}
+  - {normalized_name: turing, industry: hrtech}
+  - {normalized_name: databricks, industry: ai_ml, stage: late}
+  - {normalized_name: stripe, industry: fintech, stage: late}
+  - {normalized_name: cloudflare, industry: cybersecurity, stage: public}
+  - {normalized_name: elastic, industry: devtools, stage: public}
+  - {normalized_name: mongodb, industry: devtools, stage: public}
+  - {normalized_name: datadog, industry: devtools, stage: public}
+  - {normalized_name: airbnb, industry: consumer_internet, stage: public}
+  - {normalized_name: figma, industry: saas, stage: public}
+  - {normalized_name: gojek, industry: mobility}
+  - {normalized_name: ramp, industry: fintech, stage: late}
+  - {normalized_name: notion, industry: saas, stage: late}
+  - {normalized_name: openai, industry: ai_ml, stage: late}
+  - {normalized_name: linear, industry: devtools, stage: growth}
+  - {normalized_name: supabase, industry: devtools, stage: growth}
+  - {normalized_name: posthog, industry: devtools, stage: growth}
+  - {normalized_name: retool, industry: devtools, stage: growth}
+  - {normalized_name: replit, industry: devtools, stage: growth}
+  - {normalized_name: sarvam, industry: ai_ml, stage: growth}
+  - {normalized_name: sarvam ai, industry: ai_ml, stage: growth}
+  - {normalized_name: infosys, industry: it_services, stage: public, size: 5001+}
+  - {normalized_name: tata consultancy services, industry: it_services, stage: public, size: 5001+}
+  - {normalized_name: wipro, industry: it_services, stage: public, size: 5001+}
+  - {normalized_name: thoughtworks, industry: it_services, stage: public}
+  - {normalized_name: zomato, industry: consumer_internet, stage: public}
+  - {normalized_name: flipkart, industry: ecommerce, stage: late}
+  - {normalized_name: myntra, industry: ecommerce}
+  - {normalized_name: nykaa, industry: ecommerce, stage: public}
+  - {normalized_name: ola, industry: mobility}
+  - {normalized_name: cars24, industry: mobility}
+  - {normalized_name: ather energy, industry: mobility}
+  - {normalized_name: delhivery, industry: logistics, stage: public}
+  - {normalized_name: shadowfax, industry: logistics}
+  - {normalized_name: pharmeasy, industry: healthtech}
+  - {normalized_name: practo, industry: healthtech}
+  - {normalized_name: innovaccer, industry: healthtech}
+  - {normalized_name: darwinbox, industry: hrtech}
+  - {normalized_name: physicswallah, industry: edtech}
+  - {normalized_name: zoho, industry: saas}
+  - {normalized_name: krafton, industry: gaming}
+
+# Source industry labels (lowercase) -> Industry. Generic labels map to "other"; an "other"
+# hint never overrides a more specific company-map or self-description result.
+hints:
+  fintech: fintech
+  financial services: fintech
+  finance: fintech
+  banking: fintech
+  payments: fintech
+  edtech: edtech
+  education: edtech
+  e-learning: edtech
+  healthcare: healthtech
+  health tech: healthtech
+  healthtech: healthtech
+  medical: healthtech
+  e-commerce: ecommerce
+  ecommerce: ecommerce
+  retail: ecommerce
+  saas: saas
+  developer tools: devtools
+  devtools: devtools
+  artificial intelligence: ai_ml
+  ai: ai_ml
+  ai/ml: ai_ml
+  machine learning: ai_ml
+  gaming: gaming
+  games: gaming
+  media: media
+  entertainment: media
+  logistics: logistics
+  supply chain: logistics
+  transportation: logistics
+  mobility: mobility
+  automotive: mobility
+  crypto: crypto
+  blockchain: crypto
+  web3: crypto
+  hr tech: hrtech
+  hrtech: hrtech
+  recruitment: hrtech
+  human resources: hrtech
+  adtech: adtech
+  advertising: adtech
+  cybersecurity: cybersecurity
+  security: cybersecurity
+  consumer internet: consumer_internet
+  it services: it_services
+  it consulting: it_services
+  consulting: it_services
+  information technology: it_services
+  software development: other
+  other: other
+
+# Self-description phrases per industry, used as "<we are|is> a <phrase> (company|startup|platform...)".
+phrases:
+  fintech: [fintech, financial technology, payments, neobank, lending]
+  edtech: [edtech, education technology, e-learning]
+  healthtech: [healthtech, health tech, digital health, healthcare technology]
+  ecommerce: [e-commerce, ecommerce, online retail, marketplace]
+  saas: [saas, software as a service, b2b software]
+  devtools: [developer tools, devtools, developer platform, developer infrastructure]
+  ai_ml: [ai, artificial intelligence, machine learning, generative ai]
+  gaming: [gaming, game development, games]
+  media: [media, streaming, entertainment]
+  logistics: [logistics, supply chain, delivery]
+  mobility: [mobility, ride hailing, electric vehicle]
+  crypto: [crypto, blockchain, web3]
+  hrtech: [hrtech, hr tech, recruiting, talent]
+  adtech: [adtech, advertising technology, advertising]
+  cybersecurity: [cybersecurity, security, cyber security]
+  consumer_internet: [consumer internet, consumer technology]
+  it_services: [it services, it consulting, technology consulting, software services]

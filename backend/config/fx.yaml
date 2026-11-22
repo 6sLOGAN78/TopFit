@@ -1,0 +1,18 @@
+# Fixed FX rates to INR, updated by hand (decision D-12, see docs/decisions/0003-salary-normalisation.md).
+# Source: approximate public reference rates (RBI reference rate page style, rounded). These were NOT
+# re-fetched at execution time because the plan ran without network access; they are rounded
+# approximations dated below and must be refreshed from the RBI reference rate page before launch.
+# Every converted job stores salary_fx_as_of = as_of so the UI can say "converted at X as of <date>".
+as_of: 2026-11-22
+rates_to_inr:
+  USD: 88.5
+  EUR: 102.5
+  GBP: 116.0
+  SGD: 68.5
+  AUD: 58.0
+  CAD: 63.5
+  AED: 24.1
+period_multiplier:
+  year: 1
+  month: 12
+  hour: 2080
