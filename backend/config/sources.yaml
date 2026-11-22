@@ -58,3 +58,112 @@ adzuna:
   backfill: {auto: true, max_days_old: 30, max_pages: 200}
   schedule:
     - {hour: 23, minute: 40, batch: morning}
+
+# Greenhouse / Lever / Ashby public job boards (plan 02-14, ING-13, D-14 pulled in; ADR 0001).
+# Each board is its own scope, so one failing board never expires another board's jobs.
+# `seeds` are generated from docs/decisions/0001-sources-spike.json (measured 2026-11-21): every
+# board that answered 200 with >= 1 job. Boards discovered later live in the source_boards table.
+# `india_candidates` (greenhouse section only, read for all three ATSes) are the Indian companies
+# from the spike seed list that discovery probes where they are not yet known. Schedules are UTC
+# (IST = UTC+5:30): D-17 morning read plus one intraday run.
+greenhouse:
+  enabled: true
+  expiry_policy: absence
+  absence_missed_runs: 2
+  volume_guard: {ratio: 0.5, window: 5, min_history: 2}
+  max_runs_per_day: 4
+  min_in_scope_jobs: 5
+  max_discovery_probes: 40
+  request_interval_seconds: 1.0
+  schedule:
+    - {hour: 22, minute: 0, batch: morning}   # 03:30 IST
+    - {hour: 10, minute: 0}                   # 15:30 IST
+  seeds:
+    - groww
+    - gitlab
+    - canonical
+    - druva
+    - turing
+    - databricks
+    - stripe
+    - cloudflare
+    - elastic
+    - mongodb
+    - datadog
+    - airbnb
+    - figma
+  india_candidates:
+    - groww
+    - zerodha
+    - swiggy
+    - phonepe
+    - sharechat
+    - dream11
+    - razorpay
+    - freshworks
+    - browserstack
+    - postman
+    - unacademy
+    - rapido
+    - zepto
+    - urbancompany
+    - coindcx
+    - lenskart
+    - cleartax
+    - whatfix
+    - chargebee
+    - druva
+    - uniphore
+    - sprinklr
+    - clevertap
+    - mindtickle
+    - cashfree
+    - juspay
+    - cred
+    - meesho
+    - paytm
+    - zeta
+    - slice
+    - jupiter
+    - upgrad
+    - inmobi
+    - sarvam
+lever:
+  enabled: true
+  expiry_policy: absence
+  absence_missed_runs: 2
+  volume_guard: {ratio: 0.5, window: 5, min_history: 2}
+  max_runs_per_day: 4
+  min_in_scope_jobs: 5
+  max_discovery_probes: 40
+  request_interval_seconds: 1.0
+  schedule:
+    - {hour: 22, minute: 15, batch: morning}   # 03:45 IST
+    - {hour: 10, minute: 15}                   # 15:45 IST
+  seeds:
+    - cred
+    - meesho
+    - paytm
+    - zeta
+    - mindtickle
+ashby:
+  enabled: true
+  expiry_policy: absence
+  absence_missed_runs: 2
+  volume_guard: {ratio: 0.5, window: 5, min_history: 2}
+  max_runs_per_day: 4
+  min_in_scope_jobs: 5
+  max_discovery_probes: 40
+  request_interval_seconds: 1.0
+  schedule:
+    - {hour: 22, minute: 25, batch: morning}   # 03:55 IST
+    - {hour: 10, minute: 25}                   # 15:55 IST
+  seeds:
+    - ramp
+    - notion
+    - openai
+    - linear
+    - supabase
+    - posthog
+    - replit
+    - sarvam

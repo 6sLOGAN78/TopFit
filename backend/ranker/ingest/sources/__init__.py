@@ -1,6 +1,7 @@
 """Source adapter registry. Adapter modules are imported explicitly for registration."""
 
 from . import adzuna as adzuna
+from . import ashby as ashby
 from . import remotive as remotive
 from .base import (
     AdapterContext,
