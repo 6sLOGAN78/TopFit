@@ -2,6 +2,7 @@
 
 from ranker.llm.errors import (
     BudgetExceeded,
+    LLMAuthError,
     LLMError,
     LLMOutputInvalid,
     LLMUnavailable,
@@ -12,6 +13,7 @@ from ranker.llm.schemas import JobEnrichment
 __all__ = [
     "BudgetExceeded",
     "JobEnrichment",
+    "LLMAuthError",
     "LLMError",
     "LLMOutputInvalid",
     "LLMUnavailable",

@@ -26,6 +26,9 @@ class LlmPrices(BaseModel):
 
 
 def _price(model: str) -> ModelPrice:
+    if model.endswith(":free"):
+        # OpenRouter free-tier models cost nothing; rows are still recorded.
+        return ModelPrice(input=Decimal(0), output=Decimal(0))
     prices = load_config("llm_prices.yaml", LlmPrices)
     try:
         return prices.models[model]

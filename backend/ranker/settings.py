@@ -21,8 +21,11 @@ class Settings(BaseSettings):
     worker_heartbeat_seconds: float = 30.0
     task_poll_seconds: float = 2.0
     task_lease_seconds: int = 1800
-    llm_provider: Literal["anthropic", "fake"] = "anthropic"
+    llm_provider: Literal["anthropic", "openrouter", "fake"] = "anthropic"
     anthropic_api_key: SecretStr | None = None
+    openrouter_api_key: SecretStr | None = None
+    openrouter_model: str = "nvidia/nemotron-3.5-super-vl:free"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
     llm_model_fast: str = "claude-haiku-5-5"
     llm_model_agent: str = "claude-sonnet-5-5"
     llm_monthly_budget_usd: float = 5.0

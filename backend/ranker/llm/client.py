@@ -62,6 +62,8 @@ class LLMGateway:
         return self._provider.available()
 
     def _model_for(self, tier: Literal["fast", "agent"]) -> str:
+        if self._settings.llm_provider == "openrouter":
+            return self._settings.openrouter_model
         if tier == "fast":
             return self._settings.llm_model_fast
         return self._settings.llm_model_agent
@@ -315,6 +317,14 @@ def build_gateway(engine: AsyncEngine, settings: Settings) -> LLMGateway:
         from ranker.llm.providers.fake import FakeProvider
 
         provider = FakeProvider()
+    elif settings.llm_provider == "openrouter":
+        from ranker.llm.providers.openrouter import OpenRouterProvider
+
+        provider = OpenRouterProvider(
+            settings.openrouter_api_key,
+            settings.llm_timeout_seconds,
+            settings.openrouter_base_url,
+        )
     else:
         from ranker.llm.providers.anthropic import AnthropicProvider
 
