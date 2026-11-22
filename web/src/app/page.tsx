@@ -1,15 +1,16 @@
-import { StatusPanel } from "@/components/status-panel";
+import { Suspense } from "react";
+import { SearchPage } from "@/components/search/search-page";
+
+function PageFallback() {
+  return <div className="h-72 bg-navy" aria-hidden="true" />;
+}
 
 export default function Home() {
   return (
-    <main className="mx-auto w-full max-w-2xl space-y-6 px-6 py-16">
-      <h1 className="text-3xl font-semibold">Ranker</h1>
-      <p>
-        Describe what you want, by resume or by chat, and get a short list of
-        real, currently open jobs ranked for you, with honest reasons.
-      </p>
-      <p className="text-sm opacity-70">Walking skeleton: system status</p>
-      <StatusPanel />
+    <main>
+      <Suspense fallback={<PageFallback />}>
+        <SearchPage />
+      </Suspense>
     </main>
   );
 }
