@@ -7,7 +7,7 @@ inputs are length-capped (T-02-18).
 
 import re
 from datetime import date
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, DecimalException
 from typing import Literal
 
 from pydantic import BaseModel
@@ -21,6 +21,8 @@ INR_MIN_ANNUAL = Decimal(50_000)
 INR_MAX_ANNUAL = Decimal(50_000_000)
 # Bare-k INR values below this are read as monthly (research: bare-k rule).
 BARE_K_MONTHLY_BELOW = Decimal(200_000)
+# Poison-pill guard: source figures beyond this are treated as unknown, never converted.
+MAX_RAW_VALUE = Decimal(10**12)
 
 
 class FxConfig(BaseModel):
@@ -92,12 +94,15 @@ def to_inr_annual(
     if mult is None:
         return None, None
     cur = currency.upper()
-    if cur == "INR":
-        return value * mult, None
-    rate = fx.rates_to_inr.get(cur)
-    if rate is None:
+    try:
+        if cur == "INR":
+            return value * mult, None
+        rate = fx.rates_to_inr.get(cur)
+        if rate is None:
+            return None, None
+        return value * rate * mult, fx.as_of
+    except DecimalException:
         return None, None
-    return value * rate * mult, fx.as_of
 
 
 def _to_decimal(v: Decimal | int | float | str | None) -> Decimal | None:
@@ -105,9 +110,11 @@ def _to_decimal(v: Decimal | int | float | str | None) -> Decimal | None:
         return None
     try:
         d = v if isinstance(v, Decimal) else Decimal(str(v))
-    except InvalidOperation:
+        if not d.is_finite() or abs(d) > MAX_RAW_VALUE:
+            return None
+    except DecimalException:
         return None
-    return d if d.is_finite() else None
+    return d
 
 
 def salary_from_numbers(
@@ -183,9 +190,10 @@ def _number(raw: str, unit: str | None) -> Decimal | None:
         s = s.replace(",", "")
     try:
         d = Decimal(s)
-    except InvalidOperation:
+        d = d * _UNIT_MULT[unit] if unit else d
+    except DecimalException:
         return None
-    return d * _UNIT_MULT[unit] if unit else d
+    return d if abs(d) <= MAX_RAW_VALUE else None
 
 
 def parse_salary_text(

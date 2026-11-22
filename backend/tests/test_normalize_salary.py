@@ -92,6 +92,31 @@ def test_parse_table(text: str, dc: str | None, lo: str, hi: str, cur: str, per:
     assert got.is_estimate is False
 
 
+@pytest.mark.parametrize("raw", ["1e999999", "-1e400", "NaN", "Infinity", "9" * 400, "1e13"])
+def test_poison_values_become_unknown(raw: str) -> None:
+    got = salary_from_numbers(min=raw, max=raw, currency="USD", period="hour")
+    assert got.min is None
+    assert got.max is None
+    assert got.min_inr_annual is None
+    assert got.out_of_bounds is False
+
+
+def test_decimal_overflow_in_conversion_is_unknown(monkeypatch: pytest.MonkeyPatch) -> None:
+    import decimal
+
+    class Boom(Decimal):
+        def __mul__(self, other: object) -> Decimal:
+            raise decimal.Overflow()
+
+    assert to_inr_annual(Boom(5), "USD", "year") == (None, None)
+    assert to_inr_annual(Boom(5), "INR", "year") == (None, None)
+
+
+def test_huge_text_number_is_none_or_bounded() -> None:
+    got = parse_salary_text("$" + "9" * 200)
+    assert got is None or got.min_inr_annual is None
+
+
 def test_case_table_size() -> None:
     assert len(CASES) >= 50
 
