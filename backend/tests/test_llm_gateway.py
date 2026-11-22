@@ -198,3 +198,26 @@ async def test_messages_passed_through_unchanged(engine: AsyncEngine) -> None:
         est_input_tokens=100,
     )
     assert provider.calls[0]["messages"] is blocks
+
+
+@pytest.mark.usefixtures("clean_db")
+async def test_concurrent_calls_cannot_both_pass_budget(engine: AsyncEngine) -> None:
+    class Slow(FakeProvider):
+        async def parse(self, **kwargs: Any) -> Any:  # pyright: ignore[reportIncompatibleMethodOverride]
+            await asyncio.sleep(0.4)
+            return await super().parse(**kwargs)
+
+    # Worst case per call is 0.00015 USD: each fits in 0.0002 alone, two do not.
+    gw, provider = _gateway(
+        engine,
+        Slow({"JobEnrichment": lambda _m: ENRICH}),
+        llm_monthly_budget_usd=0.0002,
+    )
+    results = await asyncio.gather(_call(gw), _call(gw), return_exceptions=True)
+    ok = [r for r in results if isinstance(r, JobEnrichment)]
+    denied = [r for r in results if isinstance(r, BudgetExceeded)]
+    assert len(ok) == 1
+    assert len(denied) == 1
+    assert len(provider.calls) == 1
+    rows = await _rows(engine)
+    assert sorted(str(r["error"]) for r in rows) == ["None", "budget_exceeded"]

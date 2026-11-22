@@ -38,6 +38,18 @@ _INSERT_SQL = text(
     "VALUES (:user_id, :purpose, :model, :input_tokens, :output_tokens, :cache_read_tokens, "
     ":cache_write_tokens, :cost_usd, :latency_ms, :success, :error)"
 )
+_UPDATE_SQL = text(
+    "UPDATE llm_calls SET input_tokens = :input_tokens, output_tokens = :output_tokens, "
+    "cache_read_tokens = :cache_read_tokens, cache_write_tokens = :cache_write_tokens, "
+    "cost_usd = :cost_usd, latency_ms = :latency_ms, success = :success, error = :error "
+    "WHERE id = :id"
+)
+_RESERVE_SQL = text(
+    "INSERT INTO llm_calls (user_id, purpose, model, cost_usd, success, error) "
+    "VALUES (:user_id, :purpose, :model, :cost_usd, false, 'pending') RETURNING id"
+)
+# Fixed key serialising budget reservations across all gateway instances.
+_BUDGET_LOCK_KEY = 727275
 
 
 class LLMGateway:
@@ -68,14 +80,19 @@ class LLMGateway:
         output_tokens: int | None = None,
         cache_read_tokens: int | None = None,
         cache_write_tokens: int | None = None,
+        row_id: int | None = None,
     ) -> None:
+        """Insert the attempt row, or finalise the reservation row when ``row_id`` is given."""
         async with self._engine.begin() as conn:
             await conn.execute(
-                _INSERT_SQL,
+                _INSERT_SQL if row_id is None else _UPDATE_SQL,
                 {
-                    "user_id": user_id,
-                    "purpose": purpose,
-                    "model": model,
+                    **({"id": row_id} if row_id is not None else {}),
+                    **(
+                        {"user_id": user_id, "purpose": purpose, "model": model}
+                        if row_id is None
+                        else {}
+                    ),
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
                     "cache_read_tokens": cache_read_tokens,
@@ -98,7 +115,7 @@ class LLMGateway:
             error=error,
         )
 
-    async def _check_budget(
+    async def _reserve(
         self,
         *,
         user_id: UUID | None,
@@ -106,7 +123,13 @@ class LLMGateway:
         model: str,
         est_input_tokens: int,
         max_tokens: int,
-    ) -> None:
+    ) -> tuple[int, Decimal]:
+        """Reserve the worst-case cost atomically; returns (row id, reserved cost).
+
+        One transaction holds an advisory lock, re-reads spend (which includes other
+        callers' pending reservations) and inserts a pending row, so concurrent callers
+        cannot all pass the check.
+        """
         try:
             worst = worst_case_cost(model, est_input_tokens=est_input_tokens, max_tokens=max_tokens)
         except UnknownModelPrice:
@@ -120,17 +143,46 @@ class LLMGateway:
                 error="UnknownModelPrice",
             )
             raise
-        async with self._engine.connect() as conn:
+        budget = Decimal(str(self._settings.llm_monthly_budget_usd))
+        exceeded = False
+        row_id = 0
+        async with self._engine.begin() as conn:
+            await conn.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": _BUDGET_LOCK_KEY})
             spent = Decimal((await conn.execute(_SPENT_SQL)).scalar_one())
-        if spent + worst > Decimal(str(self._settings.llm_monthly_budget_usd)):
-            await self._record(
-                user_id=user_id,
-                purpose=purpose,
-                model=model,
-                success=False,
-                error="budget_exceeded",
-            )
+            if spent + worst > budget:
+                exceeded = True
+                await conn.execute(
+                    _INSERT_SQL,
+                    {
+                        "user_id": user_id,
+                        "purpose": purpose,
+                        "model": model,
+                        "input_tokens": None,
+                        "output_tokens": None,
+                        "cache_read_tokens": None,
+                        "cache_write_tokens": None,
+                        "cost_usd": Decimal(0),
+                        "latency_ms": None,
+                        "success": False,
+                        "error": "budget_exceeded",
+                    },
+                )
+            else:
+                row_id = (
+                    await conn.execute(
+                        _RESERVE_SQL,
+                        {
+                            "user_id": user_id,
+                            "purpose": purpose,
+                            "model": model,
+                            "cost_usd": worst,
+                        },
+                    )
+                ).scalar_one()
+        if exceeded:
+            log.warning("llm_budget_exceeded", purpose=purpose, model=model)
             raise BudgetExceeded()
+        return row_id, worst
 
     async def structured[T: BaseModel](
         self,
@@ -148,7 +200,7 @@ class LLMGateway:
         if not self.available():
             log.warning("llm_unavailable", purpose=purpose, reason="no_provider_key")
             raise LLMUnavailable("LLM provider not configured")
-        await self._check_budget(
+        row_id, fallback_cost = await self._reserve(
             user_id=user_id,
             purpose=purpose,
             model=model,
@@ -157,11 +209,8 @@ class LLMGateway:
         )
         started = time.perf_counter()
         recorded = False
-        # Usage is unknown until the provider returns: assume the worst case, so that a
-        # timeout or cancellation after tokens were spent still counts against the cap.
-        fallback_cost = worst_case_cost(
-            model, est_input_tokens=est_input_tokens, max_tokens=max_tokens
-        )
+        # Usage is unknown until the provider returns: the reserved worst-case cost stays
+        # on the row for a timeout or cancellation after tokens may have been spent.
         try:
             result: ParsedResult[T] | None = None
             try:
@@ -176,13 +225,13 @@ class LLMGateway:
             except TimeoutError as exc:
                 recorded = True
                 await self._fail(
-                    user_id, purpose, model, started, LLMUnavailable.__name__, fallback_cost
+                    row_id, user_id, purpose, model, started, LLMUnavailable.__name__, fallback_cost
                 )
                 raise LLMUnavailable("LLM call timed out") from exc
             except LLMError as exc:
                 # The provider reported a definite failure before returning usage.
                 recorded = True
-                await self._fail(user_id, purpose, model, started, type(exc).__name__)
+                await self._fail(row_id, user_id, purpose, model, started, type(exc).__name__)
                 raise
             real_cost = cost_usd(
                 model,
@@ -197,21 +246,24 @@ class LLMGateway:
                 # Tokens were spent even though the output is unusable.
                 recorded = True
                 await self._record_result(
-                    user_id, purpose, model, started, result, real_cost, "LLMOutputInvalid"
+                    row_id, user_id, purpose, model, started, result, real_cost, "LLMOutputInvalid"
                 )
                 raise LLMOutputInvalid("schema validation failed") from exc
             recorded = True
-            await self._record_result(user_id, purpose, model, started, result, real_cost, None)
+            await self._record_result(
+                row_id, user_id, purpose, model, started, result, real_cost, None
+            )
             return parsed
         finally:
             if not recorded:
                 # Cancellation or an unexpected error: write the row even if we are cancelled.
                 await asyncio.shield(
-                    self._fail(user_id, purpose, model, started, "Cancelled", fallback_cost)
+                    self._fail(row_id, user_id, purpose, model, started, "Cancelled", fallback_cost)
                 )
 
     async def _record_result(
         self,
+        row_id: int,
         user_id: UUID | None,
         purpose: str,
         model: str,
@@ -232,10 +284,12 @@ class LLMGateway:
             output_tokens=result.output_tokens,
             cache_read_tokens=result.cache_read_tokens,
             cache_write_tokens=result.cache_write_tokens,
+            row_id=row_id,
         )
 
     async def _fail(
         self,
+        row_id: int,
         user_id: UUID | None,
         purpose: str,
         model: str,
@@ -251,6 +305,7 @@ class LLMGateway:
             error=error,
             cost=cost,
             latency_ms=int((time.perf_counter() - started) * 1000),
+            row_id=row_id,
         )
 
 
