@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SettingsSheet } from "./settings-sheet";
 
 export function SiteHeader() {
   return (
@@ -10,6 +11,7 @@ export function SiteHeader() {
         >
           TopFit
         </Link>
+        <SettingsSheet />
       </div>
     </header>
   );

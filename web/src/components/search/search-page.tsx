@@ -32,6 +32,11 @@ export function SearchPage() {
     router.push(`/?${writeSearchParams({ ...EMPTY_STATE, q })}`);
   }
 
+  // Chip edits and relaxations write explicit filters (auto off) to the URL.
+  function apply(next: SearchUrlState) {
+    router.push(`/?${writeSearchParams(next)}`);
+  }
+
   if (state.q.trim() === "") {
     return <SearchHero onSearch={search} />;
   }
@@ -39,7 +44,12 @@ export function SearchPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pt-6 sm:px-6">
       <SearchBar key={state.q} q={state.q} onSearch={search} />
-      <ResultsList key={sp.toString()} state={state} onSearch={search} />
+      <ResultsList
+        key={sp.toString()}
+        state={state}
+        onSearch={search}
+        onApply={apply}
+      />
     </div>
   );
 }

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { searchJobsApiJobsSearchGetInfiniteOptions } from "@/lib/api/@tanstack/react-query.gen";
+import { useEffect, useRef, useState } from "react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
-  toSearchQuery,
-  type ParseModel,
-  type SearchUrlState,
-} from "@/lib/search-params";
+  metaApiMetaGetOptions,
+  searchJobsApiJobsSearchGetInfiniteOptions,
+} from "@/lib/api/@tanstack/react-query.gen";
+import { useParseModel } from "@/lib/parse-model";
+import { toSearchQuery, type SearchUrlState } from "@/lib/search-params";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -21,30 +21,24 @@ import { Spinner } from "@/components/ui/spinner";
 import { DegradedNotice } from "./degraded-notice";
 import { JobCard } from "./job-card";
 import { SearchAlerts } from "./search-alerts";
+import { FilterChips, takeFocus } from "./filter-chips";
+import { ParseSummary } from "./parse-summary";
+import { RelaxSuggestions } from "./relax-suggestions";
 import { EXAMPLE_QUERIES } from "./search-hero";
-
-const PARSE_MODEL_KEY = "topfit.parseModel";
-
-// 03-08 replaces this with lib/parse-model.ts (validated against /api/meta).
-function readParseModel(): ParseModel {
-  if (typeof window === "undefined") return "haiku";
-  try {
-    return window.localStorage.getItem(PARSE_MODEL_KEY) === "jev"
-      ? "jev"
-      : "haiku";
-  } catch {
-    return "haiku";
-  }
-}
+import { SetAsideLine } from "./set-aside-line";
 
 export function ResultsList({
   state,
   onSearch,
+  onApply,
 }: {
   state: SearchUrlState;
   onSearch: (q: string) => void;
+  onApply: (state: SearchUrlState) => void;
 }) {
-  const [parseModel] = useState<ParseModel>(readParseModel);
+  const meta = useQuery(metaApiMetaGetOptions());
+  const parseModel = useParseModel(meta.data?.parse_models);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const [loadedMore, setLoadedMore] = useState<string | null>(null);
 
   const query = useInfiniteQuery({
@@ -56,9 +50,17 @@ export function ResultsList({
     retry: false,
   });
 
+  useEffect(() => {
+    if (query.isSuccess && takeFocus("heading")) headingRef.current?.focus();
+  }, [query.isSuccess]);
+
   const pages = query.data?.pages ?? [];
   const items = pages.flatMap((p) => p.items);
-  const degraded = pages[0]?.degraded ?? false;
+  const first = pages[0];
+  const degraded = first?.degraded ?? false;
+  const parsed = first?.parsed;
+  const relax = first?.relax ?? [];
+  const canRelax = parsed !== undefined && relax.some((r) => r.count > 0);
   const nextCursor =
     pages.length > 0 ? pages[pages.length - 1].next_cursor : null;
   const loading = query.isPending;
@@ -91,8 +93,27 @@ export function ResultsList({
       ) : null}
       {degraded ? <DegradedNotice /> : null}
 
+      {parsed && first ? (
+        <div className="flex flex-col gap-2">
+          <ParseSummary parsed={parsed} />
+          <FilterChips
+            q={state.q}
+            chips={parsed.chips ?? []}
+            filters={parsed.filters}
+            meta={meta.data}
+            onApply={onApply}
+          />
+          <SetAsideLine
+            universe={first.set_aside_universe}
+            setAside={first.set_aside}
+            filters={parsed.filters}
+          />
+        </div>
+      ) : null}
+
       <div className="mt-2 flex items-baseline gap-2">
         <h2
+          ref={headingRef}
           tabIndex={-1}
           className="text-base leading-normal font-semibold outline-none"
         >
@@ -113,25 +134,38 @@ export function ResultsList({
         <Empty className="border">
           <EmptyHeader>
             <EmptyTitle className="text-base">
-              No open jobs match this search
+              {canRelax
+                ? "No jobs match all your filters"
+                : "No open jobs match this search"}
             </EmptyTitle>
             <EmptyDescription>
-              Try broader words, like one role or one skill. Or start from an
-              example:
+              {canRelax
+                ? "Try removing one of the filters below, or search with different words."
+                : "Try broader words, like one role or one skill. Or start from an example:"}
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            {EXAMPLE_QUERIES.map((q) => (
-              <Button
-                key={q}
-                type="button"
-                variant="outline"
-                onClick={() => onSearch(q)}
-                className="h-10 px-4 font-semibold"
-              >
-                {q}
-              </Button>
-            ))}
+            {canRelax && parsed ? (
+              <RelaxSuggestions
+                q={state.q}
+                relax={relax}
+                filters={parsed.filters}
+                heading={false}
+                onApply={onApply}
+              />
+            ) : (
+              EXAMPLE_QUERIES.map((q) => (
+                <Button
+                  key={q}
+                  type="button"
+                  variant="outline"
+                  onClick={() => onSearch(q)}
+                  className="h-10 px-4 font-semibold"
+                >
+                  {q}
+                </Button>
+              ))
+            )}
           </EmptyContent>
         </Empty>
       ) : (
@@ -159,7 +193,19 @@ export function ResultsList({
             "Load more jobs"
           )}
         </Button>
-      ) : items.length >= 5 ? (
+      ) : null}
+
+      {items.length >= 1 && items.length <= 4 && parsed ? (
+        <RelaxSuggestions
+          q={state.q}
+          relax={relax}
+          filters={parsed.filters}
+          heading
+          onApply={onApply}
+        />
+      ) : null}
+
+      {!nextCursor && items.length >= 5 ? (
         <p className="text-center text-sm leading-normal text-muted-foreground">
           That&apos;s every match for this search.
         </p>
