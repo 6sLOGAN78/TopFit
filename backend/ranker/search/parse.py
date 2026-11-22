@@ -11,7 +11,7 @@ seniority) so a query is read the same way a job posting is.
 
 import re
 from dataclasses import dataclass, replace
-from functools import cache
+from functools import cache, lru_cache
 
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -34,6 +34,7 @@ from ranker.settings import Settings
 
 PURPOSE = "query_parse"
 PROMPT_VERSION = "qparse-v1"
+LOCATION_CACHE_SIZE = 4096
 SALARY_BUCKETS_LPA = (3, 4, 5, 6, 8, 10, 12, 15, 18, 20, 25, 30, 40, 50)
 
 _EDGE_PUNCT = ",;:()[]\"'!?"
@@ -134,7 +135,7 @@ def _bare(token: str) -> str:
     return token.strip(_EDGE_PUNCT)
 
 
-@cache
+@lru_cache(maxsize=LOCATION_CACHE_SIZE)  # keyed by user text, so bounded
 def _location(gram: str) -> tuple[tuple[str, ...], bool]:
     loc = normalize_location(gram)
     return tuple(loc.cities), loc.country_code is not None
