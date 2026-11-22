@@ -1,0 +1,70 @@
+# Spike S3 bench stack: ONE api container on the ranker_bench database.
+# Run as its own compose project so teardown cannot touch the live stack:
+#
+#   cd /srv/ranker/bench
+#   docker compose -p ranker-bench --env-file ../.env -f compose.bench.yaml up -d --wait
+#   docker compose -p ranker-bench -f compose.bench.yaml down        # teardown
+#
+# Isolation rules (T-03-36, T-03-37, T-03-38):
+# - The service is named `bench-api`, NOT `api`. It joins the production network to reach the
+#   `db` container, and Docker DNS registers the service name as an alias on that network. A
+#   service called `api` would make Caddy's `reverse_proxy api:8000` round-robin live traffic
+#   to this container and to the bench database.
+# - DATABASE_URL points at ranker_bench only. The production DATABASE_URL, API keys and admin
+#   token in .env are NOT passed through (no env_file); only the variables interpolated below
+#   are read from --env-file.
+# - Published on 127.0.0.1 only, so ufw and Docker's iptables rules expose nothing publicly.
+# - Rate limiting is off and the LLM is the in-process fake, so the run measures retrieval and
+#   ranking, not the limiter or a model.
+# - One uvicorn worker (the image default; the command below repeats it explicitly).
+# - Ranking config comes from ./config (a copy of /app/config; see bench/README.md) so
+#   retrieval.vector_mode can be flipped between exact and hnsw without touching production.
+services:
+  bench-api:
+    image: ghcr.io/${GHCR_OWNER}/ranker-api:${IMAGE_TAG:-main}
+    command:
+      - uvicorn
+      - ranker.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --workers
+      - "1"
+      - --no-access-log
+      - --proxy-headers
+    init: true
+    mem_limit: 1g
+    ports:
+      - "127.0.0.1:8100:8000"
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/ranker_bench
+      SESSION_SECRET: ${SESSION_SECRET}
+      COOKIE_SECURE: "false"
+      EMBEDDER: fastembed
+      EMBED_THREADS: "2"
+      LOG_LEVEL: WARNING
+      RATE_LIMIT_ENABLED: "false"
+      LLM_PROVIDER: fake
+      ANTHROPIC_API_KEY: ""
+      OPENROUTER_API_KEY: ""
+      JEV_ENABLED: "false"
+      CONFIG_DIR: /bench-config
+    volumes:
+      - ./config:/bench-config:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
+    networks:
+      - prod
+
+networks:
+  prod:
+    # The live stack's default network (compose project `ranker`). Override with PROD_NETWORK
+    # if `docker network ls` shows a different name.
+    name: ${PROD_NETWORK:-ranker_default}
+    external: true

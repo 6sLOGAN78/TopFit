@@ -1,0 +1,260 @@
+backend python bengaluru 10 LPA remote ok
+backend roles in Bengaluru, Python, at least 10 LPA, remote is fine
+senior backend engineer golang hyderabad 30 LPA
+frontend react typescript remote
+full stack engineer node react pune
+data engineer spark airflow sql mumbai
+machine learning engineer pytorch bengaluru 25 LPA
+devops engineer kubernetes terraform aws chennai
+site reliability engineer remote india
+android developer kotlin bengaluru
+ios engineer swift remote
+junior python developer remote
+software engineer intern remote india
+fresher java developer pune
+engineering manager bengaluru 50 LPA
+staff engineer distributed systems remote
+data scientist nlp python gurgaon
+product engineer typescript postgres remote
+platform engineer kubernetes go bengaluru
+security engineer appsec remote
+qa automation engineer selenium hyderabad
+sdet python pytest noida
+mlops engineer mlflow kubernetes
+backend developer django postgres remote ok
+rust systems engineer remote
+c++ developer low latency mumbai
+embedded software engineer c delhi
+analytics engineer dbt snowflake remote
+llm engineer rag python bengaluru
+cloud engineer azure terraform pune hybrid
+senior data scientist pytorch Noida 20 LPA
+full stack developer postgres 40 LPA remote ok
+senior machine learning engineer node Hyderabad 20 LPA
+lead site reliability engineer java 15 LPA
+lead qa engineer kubernetes
+backend engineer java Mumbai
+senior devops engineer pytorch 40 LPA remote ok
+site reliability engineer django Noida
+senior site reliability engineer spark Gurgaon 20 LPA
+qa engineer spark Delhi 40 LPA
+backend engineer golang 40 LPA remote ok
+machine learning engineer rust Hyderabad
+data engineer aws Bengaluru 15 LPA
+lead software engineer terraform Hyderabad 20 LPA
+lead machine learning engineer fastapi Hyderabad 10 LPA
+senior frontend engineer node Mumbai 30 LPA remote ok
+platform engineer postgres Pune 30 LPA
+senior data scientist aws Pune 15 LPA
+software engineer terraform Mumbai
+junior machine learning engineer python Mumbai
+junior site reliability engineer typescript react Bengaluru
+backend engineer fastapi Chennai 15 LPA remote ok
+data engineer sql Bengaluru 20 LPA
+junior platform engineer node 15 LPA
+software engineer kubernetes Pune 10 LPA
+junior data engineer aws Pune 30 LPA
+junior data engineer rust Noida 20 LPA remote ok
+frontend engineer typescript react Bengaluru 20 LPA
+qa engineer rust Chennai 15 LPA
+junior platform engineer django remote
+full stack developer sql Noida 20 LPA
+junior mobile developer golang Chennai
+qa engineer python Hyderabad 10 LPA
+backend engineer java Pune 10 LPA
+junior full stack developer golang Delhi
+site reliability engineer node
+senior devops engineer django Bengaluru
+platform engineer golang Chennai 10 LPA remote ok
+frontend engineer pytorch remote 10 LPA
+lead qa engineer node Delhi 10 LPA remote ok
+senior frontend engineer terraform Bengaluru 40 LPA
+mobile developer rust Gurgaon 20 LPA remote ok
+frontend engineer golang Hyderabad 10 LPA
+lead devops engineer rust 15 LPA
+junior frontend engineer python Chennai 20 LPA remote ok
+data engineer typescript react Noida 40 LPA
+senior machine learning engineer python Delhi 10 LPA remote ok
+junior data engineer kubernetes Delhi 30 LPA
+senior data engineer fastapi Gurgaon 30 LPA
+lead software engineer aws Mumbai 15 LPA
+data engineer node Pune 15 LPA
+qa engineer golang Chennai 40 LPA remote ok
+senior platform engineer spark Mumbai 40 LPA
+lead data scientist postgres Delhi 30 LPA
+junior platform engineer fastapi Hyderabad 40 LPA remote ok
+junior backend engineer spark 10 LPA
+junior backend engineer node Gurgaon 15 LPA remote ok
+data engineer node Bengaluru 30 LPA remote ok
+site reliability engineer kotlin Hyderabad 30 LPA remote ok
+senior machine learning engineer kubernetes Bengaluru 40 LPA
+lead backend engineer kubernetes Mumbai 10 LPA
+junior qa engineer kubernetes Gurgaon 40 LPA
+frontend engineer terraform Gurgaon
+site reliability engineer python Gurgaon 20 LPA
+junior devops engineer pytorch Delhi 30 LPA
+qa engineer typescript react Mumbai
+machine learning engineer fastapi Chennai 30 LPA
+data scientist golang Bengaluru 15 LPA
+senior machine learning engineer postgres Bengaluru
+software engineer java Pune 20 LPA
+platform engineer node remote 30 LPA
+lead qa engineer pytorch Noida 20 LPA
+data engineer pytorch remote 20 LPA
+lead data scientist kubernetes remote 20 LPA
+junior machine learning engineer django Gurgaon 40 LPA
+junior data engineer django Pune 20 LPA
+junior platform engineer aws Gurgaon 20 LPA remote ok
+mobile developer rust Bengaluru 20 LPA
+junior software engineer typescript react Noida
+data scientist pytorch Gurgaon 40 LPA
+data engineer postgres Noida
+senior data scientist fastapi Hyderabad
+machine learning engineer node Bengaluru remote ok
+backend engineer django Delhi 30 LPA
+junior platform engineer typescript react Noida 30 LPA
+junior mobile developer spark Mumbai 30 LPA
+senior backend engineer rust Gurgaon 40 LPA
+data scientist aws remote 30 LPA
+data scientist node Mumbai 30 LPA
+full stack developer fastapi 10 LPA
+data engineer aws Hyderabad
+qa engineer golang Chennai 15 LPA remote ok
+senior data scientist node Mumbai 15 LPA
+frontend engineer aws 30 LPA
+frontend engineer fastapi remote 30 LPA
+platform engineer typescript react Bengaluru
+junior data scientist postgres Pune remote ok
+full stack developer kubernetes Chennai 30 LPA remote ok
+full stack developer pytorch Hyderabad 40 LPA remote ok
+senior platform engineer terraform remote 10 LPA
+junior devops engineer python Bengaluru 40 LPA
+senior platform engineer kotlin Delhi 15 LPA
+junior full stack developer typescript react remote 40 LPA remote ok
+qa engineer rust 20 LPA remote ok
+junior devops engineer spark Chennai
+software engineer node Delhi 20 LPA
+senior full stack developer rust Mumbai 30 LPA remote ok
+machine learning engineer postgres Hyderabad
+lead mobile developer java Mumbai 10 LPA
+lead machine learning engineer fastapi Mumbai 30 LPA
+data scientist golang Gurgaon 20 LPA
+lead data engineer typescript react Gurgaon 20 LPA remote ok
+junior frontend engineer sql Chennai 15 LPA
+data engineer rust Bengaluru
+devops engineer terraform remote 20 LPA
+site reliability engineer pytorch Hyderabad 20 LPA
+software engineer kubernetes Gurgaon 15 LPA
+senior data scientist java Gurgaon 15 LPA
+junior software engineer django Delhi 20 LPA
+lead machine learning engineer django Chennai remote ok
+mobile developer java Pune 15 LPA
+senior backend engineer fastapi Gurgaon
+lead devops engineer golang Mumbai 15 LPA
+data engineer java remote
+lead platform engineer node Mumbai 20 LPA
+mobile developer terraform Noida
+devops engineer node Hyderabad 10 LPA
+lead software engineer pytorch 10 LPA
+lead software engineer kotlin remote 40 LPA
+qa engineer node Mumbai 15 LPA remote ok
+data scientist kotlin Chennai 10 LPA
+lead mobile developer aws Chennai 40 LPA
+data scientist aws Bengaluru 30 LPA remote ok
+machine learning engineer terraform Bengaluru 20 LPA remote ok
+data scientist spark Hyderabad 40 LPA remote ok
+lead full stack developer sql Delhi 15 LPA
+devops engineer fastapi Noida 30 LPA remote ok
+frontend engineer pytorch 40 LPA
+platform engineer terraform Chennai 15 LPA
+full stack developer fastapi Chennai 20 LPA
+software engineer kotlin
+frontend engineer golang Gurgaon 20 LPA
+lead platform engineer django Bengaluru
+lead mobile developer golang Chennai 15 LPA
+lead devops engineer django Pune
+lead devops engineer kotlin Hyderabad 10 LPA
+junior mobile developer spark Noida 20 LPA
+platform engineer fastapi Mumbai 15 LPA
+lead data scientist sql Hyderabad 10 LPA
+devops engineer rust 15 LPA
+lead mobile developer kotlin Gurgaon 20 LPA remote ok
+junior mobile developer kubernetes Pune
+backend engineer sql remote
+junior machine learning engineer python Gurgaon
+data scientist golang Delhi
+devops engineer golang Bengaluru 30 LPA
+qa engineer terraform Mumbai 30 LPA
+junior devops engineer pytorch Gurgaon 10 LPA
+site reliability engineer node Noida 15 LPA
+lead frontend engineer java Gurgaon 40 LPA
+lead devops engineer python Gurgaon 40 LPA remote ok
+senior data scientist python remote 10 LPA
+software engineer terraform Pune
+lead software engineer kubernetes Delhi
+junior machine learning engineer spark Bengaluru 15 LPA
+machine learning engineer node Pune
+mobile developer postgres Bengaluru 10 LPA remote ok
+devops engineer aws
+senior mobile developer sql Noida
+senior full stack developer django remote 40 LPA
+platform engineer rust Delhi 30 LPA
+platform engineer sql Gurgaon
+software engineer spark Bengaluru 30 LPA
+platform engineer kotlin Noida 40 LPA
+senior mobile developer kubernetes Gurgaon
+machine learning engineer node 10 LPA
+full stack developer kubernetes Bengaluru
+full stack developer golang Delhi 10 LPA
+junior frontend engineer postgres Noida
+junior data scientist django Bengaluru 40 LPA remote ok
+site reliability engineer golang Noida remote ok
+senior data scientist postgres Pune 40 LPA
+machine learning engineer rust Hyderabad 20 LPA
+senior site reliability engineer golang Delhi
+site reliability engineer rust Noida 30 LPA
+site reliability engineer pytorch Bengaluru 40 LPA
+lead platform engineer sql Chennai 20 LPA remote ok
+qa engineer aws
+senior data scientist django Delhi 40 LPA
+lead frontend engineer spark Mumbai
+devops engineer django Chennai 20 LPA
+lead devops engineer pytorch Gurgaon remote ok
+junior frontend engineer node Pune remote ok
+platform engineer golang Hyderabad remote ok
+software engineer terraform Hyderabad 10 LPA
+senior data scientist node Mumbai 40 LPA remote ok
+lead software engineer postgres Delhi 15 LPA
+lead software engineer fastapi Mumbai 30 LPA
+junior backend engineer spark Delhi
+lead platform engineer typescript react remote 15 LPA
+machine learning engineer typescript react 30 LPA remote ok
+junior machine learning engineer sql Delhi 20 LPA
+mobile developer aws remote 30 LPA
+mobile developer python Mumbai 40 LPA remote ok
+platform engineer terraform Delhi 10 LPA remote ok
+machine learning engineer pytorch Hyderabad 15 LPA
+data engineer golang remote 10 LPA remote ok
+lead devops engineer node Hyderabad 40 LPA remote ok
+lead devops engineer sql 10 LPA
+mobile developer golang Noida
+lead full stack developer django Gurgaon 20 LPA
+full stack developer aws Gurgaon 15 LPA remote ok
+junior software engineer typescript react 15 LPA remote ok
+junior full stack developer spark Mumbai 20 LPA
+site reliability engineer java Pune 15 LPA
+junior frontend engineer postgres Delhi 15 LPA
+lead mobile developer terraform Chennai 15 LPA
+senior qa engineer terraform Gurgaon
+junior devops engineer terraform Gurgaon
+machine learning engineer terraform Gurgaon 20 LPA
+mobile developer golang Mumbai
+data scientist rust Bengaluru 15 LPA
+junior data engineer django Gurgaon
+lead site reliability engineer kotlin remote 15 LPA
+data engineer terraform
+data scientist node Hyderabad 20 LPA
+senior backend engineer django Mumbai 30 LPA
+full stack developer golang Noida 15 LPA
+senior full stack developer kotlin remote ok
+platform engineer fastapi Chennai 10 LPA
