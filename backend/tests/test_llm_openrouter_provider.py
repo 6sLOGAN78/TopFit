@@ -76,6 +76,14 @@ async def test_success_request_shape_and_usage() -> None:
 
 
 @respx.mock
+async def test_reasoning_disabled_in_request() -> None:
+    route = respx.post(URL).mock(return_value=_ok())
+    await _parse(OpenRouterProvider(SecretStr(KEY), 5.0))
+    sent = json.loads(route.calls.last.request.content)
+    assert sent["reasoning"] == {"enabled": False}
+
+
+@respx.mock
 @pytest.mark.parametrize("content", ["not json", "", json.dumps({**GOOD, "seniority": "wizard"})])
 async def test_invalid_output(content: str) -> None:
     respx.post(URL).mock(return_value=_ok(content))

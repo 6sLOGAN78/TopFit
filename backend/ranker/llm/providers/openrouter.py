@@ -111,6 +111,9 @@ class OpenRouterProvider:
         payload: dict[str, Any] = {
             "model": model,
             "max_tokens": max_tokens,
+            # OpenRouter may enable reasoning for some models (e.g. Haiku 5.5), which can
+            # consume the whole max_tokens budget and leave content empty.
+            "reasoning": {"enabled": False},
             "messages": [
                 {"role": "system", "content": system},
                 *({"role": m["role"], "content": _flatten(m["content"])} for m in messages),
