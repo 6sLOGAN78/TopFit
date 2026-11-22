@@ -71,8 +71,8 @@ venv = ".venv"
 reportMissingTypeStubs = false
 
 [tool.pytest.ini_options]
-markers = ["llm: real LLM calls (opt-in)"]
-addopts = "-m 'not llm'"
+markers = ["llm: real LLM calls (opt-in)", "eval: needs the private eval snapshot (opt-in)"]
+addopts = "-m 'not llm and not eval'"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 testpaths = ["tests"]
