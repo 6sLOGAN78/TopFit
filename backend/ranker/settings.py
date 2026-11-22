@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 30.0
     adzuna_app_id: SecretStr | None = None
     adzuna_app_key: SecretStr | None = None
+    admin_token: SecretStr | None = None
 
 
 @lru_cache
