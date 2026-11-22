@@ -1,0 +1,80 @@
+# Synthetic, hand-written JD snippets with hand-labelled expected canonical skills.
+# Not copied from real postings.
+- text: "We are hiring a backend engineer to build Python services on FastAPI and PostgreSQL. You will deploy with Docker on AWS."
+  expected: [python, fastapi, postgresql, docker, aws]
+- text: "Senior Java developer with Spring Boot and microservices experience. Kafka and MySQL knowledge is a plus."
+  expected: [java, spring-boot, microservices, kafka, mysql]
+- text: "Frontend role working with React, TypeScript and Redux. You will write tests in Jest and ship via GitHub Actions."
+  expected: [react, typescript, redux, jest, github-actions]
+- text: "Full-stack engineer comfortable with Node.js, Express.js and MongoDB, plus a React frontend."
+  expected: [nodejs, express, mongodb, react]
+- text: "Own our data platform: Airflow, dbt, Snowflake and Spark. Strong SQL and Python required."
+  expected: [airflow, dbt, snowflake, spark, sql, python]
+- text: "Skills: Python, R, SQL, Tableau. You will analyse experiments and report to product."
+  expected: [python, r, sql, tableau]
+- text: "R&D team seeking a motivated engineer to join our research group."
+  expected: []
+- text: "Systems engineer writing low-latency services in C++ on Linux. Knowledge of multithreading and gRPC."
+  expected: [cpp, linux, concurrency, grpc, scalability]
+- text: "You will build .NET Core APIs in C# using ASP.NET and SQL Server, deployed on Azure."
+  expected: [dotnet, csharp, aspnet, sql-server, azure]
+- text: "We write most of our services in Go and run them on Kubernetes with Terraform and Helm."
+  expected: [go, kubernetes, terraform, helm]
+- text: "Go to market experience with enterprise customers and a strong sales mindset."
+  expected: []
+- text: "Android developer using Kotlin and Jetpack Compose. Retrofit and Firebase experience helps."
+  expected: [android, kotlin, jetpack-compose, firebase]
+- text: "iOS engineer fluent in Swift and SwiftUI, with Xcode and Objective-C background."
+  expected: [ios, swift, swiftui, xcode, objective-c]
+- text: "Cross-platform apps in Flutter and Dart with a REST API backend."
+  expected: [flutter, dart, rest-api]
+- text: "SWIFT payments messaging specialist for our banking operations team."
+  expected: []
+- text: "Machine learning engineer: PyTorch, scikit-learn, and Hugging Face. Experience with MLflow and SageMaker."
+  expected: [machine-learning, pytorch, scikit-learn, huggingface, mlflow, sagemaker]
+- text: "Build LLM applications with LangChain, RAG and vector databases like Pinecone. Prompt engineering a plus."
+  expected: [llm, langchain, rag, vector-database, prompt-engineering]
+- text: "SRE role: Prometheus, Grafana, Kubernetes, incident response and on-call. Strong Linux fundamentals."
+  expected: [sre, prometheus, grafana, kubernetes, incident-management, pagerduty, linux]
+- text: "QA automation engineer with Selenium, Cypress and Postman. Knowledge of CI/CD and Jenkins."
+  expected: [qa, selenium, cypress, postman, ci-cd, jenkins, test-automation]
+- text: "Security engineer familiar with OWASP Top 10, Burp Suite and penetration testing."
+  expected: [owasp, burp-suite, penetration-testing]
+- text: "Data engineer on Databricks and PySpark with Kafka streaming and BigQuery on GCP."
+  expected: [databricks, pyspark, kafka, bigquery, gcp]
+- text: "Django developer building REST APIs with PostgreSQL and Redis, tested using pytest."
+  expected: [django, rest-api, postgresql, redis, pytest]
+- text: "Unity game developer building 3D mobile games in C#."
+  expected: [unity, csharp]
+- text: "Unity of purpose and strong teamwork are central to our culture."
+  expected: []
+- text: "We need someone to excel at communication and stakeholder management."
+  expected: []
+- text: "Advanced Excel and Power BI for monthly business reporting."
+  expected: [excel, power-bi, business-intelligence]
+- text: "Rust systems programmer with cargo tooling and tokio experience."
+  expected: [rust]
+- text: "Elasticsearch and Kibana for search relevance; learning to rank is a plus."
+  expected: [elasticsearch, information-retrieval]
+- text: "PHP developer with Laravel, MySQL and jQuery for e-commerce sites."
+  expected: [php, laravel, mysql, jquery]
+- text: "Ruby on Rails engineer with PostgreSQL and Sidekiq. React on the frontend."
+  expected: [rails, postgresql, react]
+- text: "Vue.js and Nuxt developer with Tailwind CSS and Vite."
+  expected: [vue, nuxt, tailwind, vite]
+- text: "Embedded engineer in C and C++ for firmware on STM32 using an RTOS."
+  expected: [c, cpp, embedded-systems, arduino]
+- text: "Skills: C, C++, Python."
+  expected: [c, cpp, python]
+- text: "Salesforce developer: Apex, Lightning and SOQL, integrating with REST APIs."
+  expected: [salesforce, apex, rest-api]
+- text: "Cloud engineer with AWS Lambda, S3, DynamoDB and CloudFormation. Serverless mindset."
+  expected: [aws-lambda, s3, dynamodb, cloudformation, serverless]
+- text: "Strong grasp of data structures, algorithms and system design for our SDE intern programme."
+  expected: [data-structures, algorithms, system-design]
+- text: "Our JavaScript codebase runs on Angular with RxJS; we are migrating to TypeScript."
+  expected: [javascript, angular, rxjs, typescript]
+- text: "Spring is the best time of year to join our team in Bengaluru."
+  expected: []
+- text: "Experience with Java, Hibernate and Spring MVC for enterprise banking apps on Oracle Database."
+  expected: [java, hibernate, spring, oracle-db]
