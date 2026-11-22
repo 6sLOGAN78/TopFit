@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 import pytest
@@ -55,6 +56,24 @@ def test_no_conflicting_licence_sources() -> None:
 )
 def test_required_cases_on_real_taxonomy(text: str, expected: list[str]) -> None:
     assert extract_skills(text) == expected
+
+
+@pytest.mark.parametrize(
+    "unit",
+    [
+        "C, Go, R, Python, Swift, Rust, Excel, Make, node, Spark, ",
+        "R R R R R R R R R R ",
+        "Go Go Go Go Go Go Go Go ",
+        "Python, R, SQL, C, Go, ",
+        " " * 40,
+    ],
+)
+def test_long_single_line_is_fast(unit: str) -> None:
+    text = unit * (50_000 // len(unit) + 1)
+    assert "\n" not in text
+    start = time.perf_counter()
+    extract_skills(text)
+    assert time.perf_counter() - start < 1.0
 
 
 def test_skills_text_tokens() -> None:

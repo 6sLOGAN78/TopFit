@@ -8,9 +8,14 @@ Matching rules
 - Longest alias first inside one alternation (``React Native`` before ``React``).
 - Ambiguous aliases (``Go``, ``R``, ``Swift`` ...) only count with a nearby context regex
   or when they sit in a separator-delimited skills list.
+
+Cost bounds (T-02-22): input is capped at 20k chars; separators are located once per text and
+looked up with ``bisect``; per-match list-context work uses fixed windows; each canonical is
+evaluated at most ``MAX_WEAK_TRIES`` times and skipped once found.
 """
 
 import re
+from bisect import bisect_left, bisect_right
 from collections.abc import Sequence
 from functools import cache
 from typing import Literal
@@ -24,6 +29,8 @@ BOUND_R = r"(?![A-Za-z0-9_+#])"
 
 MAX_TEXT_CHARS = 20_000
 CONTEXT_WINDOW = 40
+LIST_WINDOW = 200
+MAX_WEAK_TRIES = 5
 
 Category = Literal[
     "language",
@@ -42,7 +49,8 @@ Category = Literal[
     "mobile",
 ]
 
-_SEPARATORS = re.compile(r"[,/|•·;:\n]|\s+(?:and|or)\s+|\s+&\s+")
+# Every alternative is a bounded token: no whitespace-run quantifiers, so matching is linear.
+_SEPARATORS = re.compile(r"[,/|•·;:\n]|\b(?:and|or)\b|(?<=\s)&(?=\s)")
 _LIST_KEYWORDS = re.compile(
     r"\b(?:skills?|languages?|stack|proficien\w*|technologies|tools|"
     r"experience (?:with|in)|knowledge of)\b",
@@ -160,7 +168,7 @@ class SkillMatcher:
 
     def extract(self, text: str) -> list[str]:
         text = text[:MAX_TEXT_CHARS]
-        strong: list[tuple[int, int, str]] = []
+        raw_strong: list[tuple[int, int, str]] = []
         weak: list[tuple[int, int, _Alias]] = []
         for is_weak, cs, pat in self._patterns:
             for m in pat.finditer(text):
@@ -171,48 +179,76 @@ class SkillMatcher:
                 if is_weak:
                     weak.append((m.start(1), m.end(1), rec))
                 else:
-                    strong.append((m.start(1), m.end(1), rec.canonical))
-        strong = _drop_overlaps(strong)
-        found: set[str] = set()
-        for _, _, canonical in strong:
-            found.add(canonical)
-        for start, end, rec in weak:
-            if any(s < end and start < e for s, e, _ in strong):
-                continue
-            if self._weak_ok(text, start, end, rec, strong):
-                found.add(rec.canonical)
+                    raw_strong.append((m.start(1), m.end(1), rec.canonical))
+        strong = _drop_overlaps(raw_strong)
+        strong_starts = [s for s, _, _ in strong]
+        found: set[str] = {c for _, _, c in strong}
+        if weak:
+            sep_starts: list[int] = []
+            sep_ends: list[int] = []
+            for sep in _SEPARATORS.finditer(text):
+                sep_starts.append(sep.start())
+                sep_ends.append(sep.end())
+            tried: dict[str, int] = {}
+            for start, end, rec in sorted(weak, key=lambda w: w[0]):
+                canonical = rec.canonical
+                if canonical in found or tried.get(canonical, 0) >= MAX_WEAK_TRIES:
+                    continue
+                if _overlaps(strong, strong_starts, start, end):
+                    continue
+                tried[canonical] = tried.get(canonical, 0) + 1
+                if _weak_ok(text, start, end, rec, strong, strong_starts, sep_starts, sep_ends):
+                    found.add(canonical)
         for canonical in list(found):
             found.update(self._implies.get(canonical, []))
         return sorted(found)
 
-    @staticmethod
-    def _weak_ok(
-        text: str, start: int, end: int, rec: _Alias, strong: list[tuple[int, int, str]]
-    ) -> bool:
-        lo = max(0, start - CONTEXT_WINDOW)
-        window = text[lo : end + CONTEXT_WINDOW]
-        if any(c.search(window) for c in rec.context):
-            return True
-        line_start = text.rfind("\n", 0, start) + 1
-        line_end = text.find("\n", end)
-        if line_end == -1:
-            line_end = len(text)
-        # The alias must stand alone as one list item.
-        seg_start = line_start
-        seg_end = line_end
-        for sep in _SEPARATORS.finditer(text, line_start, line_end):
-            if sep.end() <= start:
-                seg_start = sep.end()
-            elif sep.start() >= end:
-                seg_end = sep.start()
-                break
-        segment = text[seg_start:seg_end].strip(" \t.()*-")
-        if segment != text[start:end]:
-            return False
-        others = sum(1 for s, e, _ in strong if line_start <= s and e <= line_end)
-        if others >= 2:
-            return True
-        return bool(_LIST_KEYWORDS.search(text[line_start:start]))
+
+def _overlaps(strong: list[tuple[int, int, str]], starts: list[int], start: int, end: int) -> bool:
+    """True if [start, end) overlaps a strong span (spans are sorted, non-overlapping)."""
+    i = bisect_right(starts, start) - 1
+    if i >= 0 and strong[i][1] > start:
+        return True
+    return i + 1 < len(strong) and strong[i + 1][0] < end
+
+
+def _weak_ok(
+    text: str,
+    start: int,
+    end: int,
+    rec: _Alias,
+    strong: list[tuple[int, int, str]],
+    strong_starts: list[int],
+    sep_starts: list[int],
+    sep_ends: list[int],
+) -> bool:
+    lo = max(0, start - CONTEXT_WINDOW)
+    window = text[lo : end + CONTEXT_WINDOW]
+    if any(c.search(window) for c in rec.context):
+        return True
+    # Line bounds, searched only within a fixed window so cost per match is constant.
+    wlo = max(0, start - LIST_WINDOW)
+    whi = min(len(text), end + LIST_WINDOW)
+    nl = text.rfind("\n", wlo, start)
+    line_start = nl + 1 if nl != -1 else wlo
+    nl = text.find("\n", end, whi)
+    line_end = nl if nl != -1 else whi
+    # The alias must stand alone as one list item.
+    i = bisect_right(sep_ends, start) - 1
+    seg_start = max(line_start, sep_ends[i]) if i >= 0 else line_start
+    j = bisect_left(sep_starts, end)
+    seg_end = min(line_end, sep_starts[j]) if j < len(sep_starts) else line_end
+    if text[seg_start:seg_end].strip(" \t.()*-") != text[start:end]:
+        return False
+    others = 0
+    k = bisect_left(strong_starts, line_start)
+    while k < len(strong) and strong[k][0] < line_end and others < 2:
+        if strong[k][1] <= line_end:
+            others += 1
+        k += 1
+    if others >= 2:
+        return True
+    return bool(_LIST_KEYWORDS.search(text, wlo, start))
 
 
 def _drop_overlaps(spans: list[tuple[int, int, str]]) -> list[tuple[int, int, str]]:
