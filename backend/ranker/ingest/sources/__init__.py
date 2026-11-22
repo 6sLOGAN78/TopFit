@@ -1,9 +1,12 @@
 """Source adapter registry. Adapter modules are imported explicitly for registration."""
 
 from . import adzuna as adzuna
+from . import arbeitnow as arbeitnow
 from . import ashby as ashby
 from . import greenhouse as greenhouse
+from . import jobicy as jobicy
 from . import lever as lever
+from . import remoteok as remoteok
 from . import remotive as remotive
 from .base import (
     AdapterContext,

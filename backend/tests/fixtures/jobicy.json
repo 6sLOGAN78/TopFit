@@ -1,0 +1,51 @@
+{
+ "apiVersion": "2",
+ "jobCount": 3,
+ "jobs": [
+  {
+   "id": 2001,
+   "url": "https://jobicy.com/jobs/2001-devops-engineer",
+   "jobTitle": "DevOps Engineer",
+   "companyName": "Hooli",
+   "jobIndustry": [
+    "Fintech",
+    "SaaS"
+   ],
+   "jobType": [
+    "Full-Time"
+   ],
+   "jobGeo": "Anywhere",
+   "jobLevel": "Senior",
+   "jobExcerpt": "DevOps Engineer excerpt",
+   "jobDescription": "<p>DevOps Engineer role at Hooli.</p>",
+   "pubDate": "2025-11-20 09:00:00",
+   "annualSalaryMin": 80000,
+   "annualSalaryMax": 120000,
+   "salaryCurrency": "USD"
+  },
+  {
+   "id": 2002,
+   "url": "https://jobicy.com/jobs/2002-data-analyst",
+   "jobTitle": "Data Analyst",
+   "companyName": "Pied Piper",
+   "jobIndustry": [
+    "Data Science"
+   ],
+   "jobType": [
+    "Contract"
+   ],
+   "jobGeo": "APAC",
+   "jobLevel": "Midweight",
+   "jobExcerpt": "Data Analyst excerpt",
+   "jobDescription": "<p>Data Analyst role at Pied Piper.</p>",
+   "pubDate": "2025-11-21T10:00:00+05:30",
+   "annualSalaryMin": null,
+   "annualSalaryMax": null,
+   "salaryCurrency": null
+  },
+  {
+   "id": 2003,
+   "jobTitle": "No url or company"
+  }
+ ]
+}

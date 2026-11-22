@@ -167,3 +167,48 @@ ashby:
     - posthog
     - replit
     - sarvam
+
+# Free remote-job APIs (plan 02-16, D-14/D-16; ADR 0001). All times UTC (IST = UTC+5:30).
+# himalayas: not ingested; 0 of 20 sampled postings were India-eligible (ADR 0001).
+#
+# Arbeitnow: paginated full feed, so absence expiry per complete scope. Attribution: credit
+# Arbeitnow and link to the listing `url`.
+arbeitnow:
+  enabled: true
+  expiry_policy: absence
+  absence_missed_runs: 2
+  volume_guard: {ratio: 0.5, window: 5, min_history: 2}
+  max_runs_per_day: 4
+  url: https://www.arbeitnow.com/api/job-board-api
+  max_pages: 40
+  min_interval_seconds: 1.0
+  schedule:
+    - {hour: 23, minute: 5, batch: morning}   # 04:35 IST
+    - {hour: 11, minute: 5}                   # 16:35 IST
+
+# RemoteOK: capped latest-N window (not the full feed), so TTL expiry: dropping out of the window
+# does not mean the job closed. Attribution: credit RemoteOK and link to its own `url`.
+remoteok:
+  enabled: true
+  expiry_policy: ttl
+  ttl_days: 30
+  unseen_days: 14
+  max_runs_per_day: 4
+  url: https://remoteok.com/api
+  schedule:
+    - {hour: 23, minute: 15, batch: morning}  # 04:45 IST
+    - {hour: 11, minute: 15}                  # 16:45 IST
+
+# Jobicy: capped latest-N window, TTL expiry. No geo filter: geo=india returned HTTP 400 on
+# 2026-11-22. Attribution: credit Jobicy and link to its `url`.
+jobicy:
+  enabled: true
+  expiry_policy: ttl
+  ttl_days: 30
+  unseen_days: 14
+  max_runs_per_day: 4
+  url: https://jobicy.com/api/v2/remote-jobs
+  count: 50
+  schedule:
+    - {hour: 23, minute: 20, batch: morning}  # 04:50 IST
+    - {hour: 11, minute: 20}                  # 16:50 IST

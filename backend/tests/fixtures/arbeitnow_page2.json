@@ -1,0 +1,25 @@
+{
+ "data": [
+  {
+   "slug": "data-engineer-beta-3",
+   "company_name": "Beta AG",
+   "title": "Data Engineer",
+   "description": "<p>Build Data Engineer systems.</p><ul><li>Python</li></ul>",
+   "remote": false,
+   "url": "https://www.arbeitnow.com/jobs/companies/data-engineer-beta-3",
+   "tags": [
+    "SQL"
+   ],
+   "job_types": [
+    "full time",
+    "internship"
+   ],
+   "location": "Munich",
+   "created_at": 1763812800
+  }
+ ],
+ "links": {
+  "first": "x",
+  "next": null
+ }
+}
