@@ -37,6 +37,11 @@ jobs:
         run: uv run ruff format --check .
       - name: Pyright
         run: uv run pyright
+      - name: OpenAPI is fresh
+        env:
+          DATABASE_URL: postgresql+psycopg://ci:ci@localhost:5432/ci
+          SESSION_SECRET: ci-dummy-secret-not-used-for-export-0000000000000000
+        run: uv run python -m ranker.openapi_export --check
       - name: Pytest (testcontainers, pgvector PG18)
         run: uv run pytest -q
 
@@ -59,10 +64,67 @@ jobs:
         run: npm run lint
       - name: Format check
         run: npm run format:check
+      - name: Generated API client is fresh
+        run: npm run gen:api && git diff --exit-code src/lib/api
       - name: Typecheck
         run: npm run typecheck
+      - name: Unit tests
+        run: npm test
       - name: Build
         run: npm run build
+
+  # Fuzzes every endpoint against a live uvicorn + Postgres (fake embedder and LLM).
+  schemathesis:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      db:
+        image: pgvector/pgvector:0.8.7-pg18-trixie
+        env:
+          POSTGRES_PASSWORD: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:ci@127.0.0.1:5432/postgres
+      SESSION_SECRET: ci-schemathesis-secret-0000000000000000000000000000000
+      EMBEDDER: fake
+      LLM_PROVIDER: fake
+      APP_ENV: test
+      COOKIE_SECURE: "false"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          version: "0.9.18"
+          enable-cache: true
+          working-directory: backend
+      - name: Sync dependencies
+        run: uv sync --frozen
+      - name: Migrate
+        run: uv run alembic upgrade head
+      - name: Seed jobs
+        run: uv run python -m tests.fixtures.search.jobs_seed --n 50
+      - name: Start API
+        run: |
+          nohup uv run uvicorn ranker.main:app --port 8000 > uvicorn.log 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -fs http://127.0.0.1:8000/api/readyz > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat uvicorn.log
+          exit 1
+      - name: Schemathesis
+        run: >-
+          uvx schemathesis==4.33.4 run http://127.0.0.1:8000/api/openapi.json
+          --checks not_a_server_error,status_code_conformance,content_type_conformance,response_schema_conformance
 
   deploy-config:
     runs-on: ubuntu-24.04
