@@ -10,6 +10,7 @@ retrieval:
   vector_mode: exact      # exact (enable_indexscan off) | hnsw (ef_search 200, iterative scan)
   skill_rank_weight: 0.5  # weight of the skills_tsv rank inside the lexical score
   set_aside_universe_k: 200
+  set_aside_when_results_below: 20  # skip the ~0.8 s set-aside query when the pool is full (ADR 0004); 0 = always
 
 page_size: 20
 

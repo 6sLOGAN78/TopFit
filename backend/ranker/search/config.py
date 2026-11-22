@@ -18,6 +18,9 @@ class Retrieval(BaseModel):
     vector_mode: Literal["exact", "hnsw"]
     skill_rank_weight: float
     set_aside_universe_k: int
+    # Compute set-aside/relax counts only when fewer than this many candidates were fused
+    # (they exist to explain a short result list). 0 = always compute (ADR 0004).
+    set_aside_when_results_below: int = 0
 
 
 class GuestWeights(BaseModel):

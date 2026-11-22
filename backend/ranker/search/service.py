@@ -391,7 +391,8 @@ async def search(
         fused = (await conn.execute(stmt, params)).all()
         set_aside: list[SetAsideCount] = []
         relax: list[RelaxOption] = []
-        if compiled.clauses:
+        below = ret.set_aside_when_results_below
+        if compiled.clauses and (below <= 0 or len(fused) < below):
             sa_params = {
                 **params,
                 "lex_k": ret.set_aside_universe_k,

@@ -4,6 +4,7 @@
 services:
   db:
     image: pgvector/pgvector:0.8.7-pg18-trixie
+    shm_size: 256mb  # Docker's 64 MB /dev/shm breaks parallel index builds (ADR 0004)
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

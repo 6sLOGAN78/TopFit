@@ -6,6 +6,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from ranker.embeddings.embedder import FakeEmbedder
+from ranker.search import service
+from ranker.search.config import ranking_config
 from ranker.search.models import SearchFilters
 from ranker.search.service import SearchRequest, search
 from ranker.settings import get_settings
@@ -68,14 +70,41 @@ async def test_set_aside_and_relax_counts(engine: AsyncEngine) -> None:
 
 
 @pytest.mark.usefixtures("clean_db")
-async def test_no_city_geo_counts_us_only_and_relax_omits_geo(engine: AsyncEngine) -> None:
+async def test_no_city_geo_counts_us_only_and_relax_omits_geo(
+    engine: AsyncEngine, monkeypatch: pytest.MonkeyPatch
+) -> None:
     await _seed(engine)
+    _set_threshold(monkeypatch, 0)  # always compute; the full-pool skip is tested below
     resp = await search(
         engine, FakeEmbedder(), None, get_settings(), SearchRequest(q="python backend")
     )
     assert {s.filter: s.count for s in resp.set_aside} == {"geo": 3}
     assert resp.relax == []
     assert len(resp.items) == 20
+
+
+def _set_threshold(monkeypatch: pytest.MonkeyPatch, value: int) -> None:
+    cfg = ranking_config()
+    patched = cfg.model_copy(
+        update={
+            "retrieval": cfg.retrieval.model_copy(update={"set_aside_when_results_below": value})
+        }
+    )
+    monkeypatch.setattr(service, "ranking_config", lambda: patched)
+
+
+@pytest.mark.usefixtures("clean_db")
+async def test_set_aside_skipped_when_pool_is_full(engine: AsyncEngine) -> None:
+    assert ranking_config().retrieval.set_aside_when_results_below == 20
+    await _seed(engine)
+    resp = await search(
+        engine, FakeEmbedder(), None, get_settings(), SearchRequest(q="python backend")
+    )
+    assert len(resp.items) == 20
+    assert resp.set_aside == [] and resp.relax == []
+    # a short pool (10 Bengaluru matches < 20) still reports what was set aside
+    short = await search(engine, FakeEmbedder(), None, get_settings(), SearchRequest(q=Q))
+    assert {s.filter for s in short.set_aside} == {"city", "min_salary"}
 
 
 @pytest.mark.usefixtures("clean_db")
