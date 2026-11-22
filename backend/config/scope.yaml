@@ -1,0 +1,120 @@
+# Tech-scope rules (D-05). Regexes are matched case-insensitively against the job title only
+# (first 300 characters) and are literal alternations with word boundaries (no nested
+# quantifiers).
+#
+# Decisions:
+#   - "data analyst" = IN (data family). D-05 says engineering + data.
+#   - sysadmin / IT admin / helpdesk = OUT (IT operations, not engineering).
+#   - customer support engineer / support engineer = OUT (tech support).
+#   - sales engineer = OUT (sales).
+#   - Engineering manager = IN (still an engineering role).
+#   - The exclude list always wins, even when the category is a tech category.
+include_title:
+  - 'engineer(?:s|ing)?'
+  - 'developer'
+  - 'sde'
+  - 'swe'
+  - 'programmer'
+  - 'software'
+  - 'devops'
+  - 'sre'
+  - 'site reliability'
+  - 'platform'
+  - 'data (?:engineer|scientist|analyst|analytics|architect)'
+  - 'analytics'
+  - 'ml'
+  - 'machine learning'
+  - 'deep learning'
+  - 'ai'
+  - 'nlp'
+  - 'llm'
+  - 'qa'
+  - 'sdet'
+  - 'test automation'
+  - 'security'
+  - 'mobile'
+  - 'android'
+  - 'ios'
+  - 'backend'
+  - 'back-end'
+  - 'frontend'
+  - 'front-end'
+  - 'full[- ]?stack'
+  - 'researcher'
+
+exclude_title:
+  - 'product manager'
+  - 'product owner'
+  - 'program manager'
+  - 'project manager'
+  - 'designer'
+  - 'ux'
+  - 'support'
+  - 'help ?desk'
+  - 'it admin(?:istrator)?'
+  - 'sys ?admin'
+  - 'systems? administrator'
+  - 'sales'
+  - 'recruit(?:er|ing|ment)'
+  - 'talent acquisition'
+  - 'marketing'
+  - 'content writer'
+  - 'technical writer'
+  - 'collections?'
+  - 'customer success'
+  - 'business development'
+  - 'account executive'
+  - 'accountant'
+  - 'hr'
+
+# Source categories that count as tech when the title alone is ambiguous (compared as
+# lowercase, exact). Remotive categories, Adzuna `it-jobs` (ADR 0001), Internshala-style names.
+tech_categories:
+  - software development
+  - software-dev
+  - data and analytics
+  - data
+  - devops / sysadmin
+  - devops
+  - qa
+  - artificial intelligence
+  - it-jobs
+  - it jobs
+  - engineering
+  - software engineering
+
+# Lever/Greenhouse team or department names: substring match on the lowercase category.
+tech_category_keywords:
+  - engineering
+  - data
+  - technology
+  - platform
+  - infrastructure
+  - security
+  - software
+  - machine learning
+
+# Category -> family when the title gives no family hint.
+category_family:
+  data and analytics: data
+  data: data
+  devops / sysadmin: devops
+  devops: devops
+  qa: qa
+  artificial intelligence: ml_ai
+  security: security
+
+# First match wins, in this order.
+family_patterns:
+  - family: mobile
+    patterns: ['android', 'ios', 'mobile', 'flutter', 'react native']
+  - family: security
+    patterns: ['security', 'appsec', 'infosec']
+  - family: qa
+    patterns: ['qa', 'sdet', 'test automation', 'quality assurance', 'tester']
+  - family: devops
+    patterns: ['devops', 'sre', 'site reliability', 'platform', 'infrastructure', 'cloud engineer']
+  - family: ml_ai
+    patterns: ['ml', 'machine learning', 'deep learning', 'ai', 'nlp', 'llm', 'computer vision']
+  - family: data
+    patterns: ['data', 'analytics', 'analyst', 'bi developer']
