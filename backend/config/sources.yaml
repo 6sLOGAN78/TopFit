@@ -1,0 +1,10 @@
+# UTC; 05:00 IST morning read (D-17, finishes before 06:30 IST) and 17:00 IST intraday.
+# Remotive terms: <= 4 fetches/day, credit + link back, no signup wall.
+remotive:
+  enabled: true
+  expiry_policy: absence
+  max_runs_per_day: 4
+  url: https://remotive.com/api/remote-jobs
+  schedule:
+    - {hour: 23, minute: 30, batch: morning}
+    - {hour: 11, minute: 30}

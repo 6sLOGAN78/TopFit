@@ -1,0 +1,159 @@
+{
+  "0-legal-notice": "Remotive fixture: synthetic data. Link back to Remotive required.",
+  "job-count": 9,
+  "jobs": [
+    {
+      "id": 1001,
+      "url": "https://remotive.com/remote-jobs/software-development/senior-backend-engineer-1001",
+      "title": "Senior Backend Engineer",
+      "company_name": "Acme Labs 1001",
+      "company_logo": "https://remotive.com/logo.png",
+      "category": "Software Development",
+      "tags": [
+        "python",
+        "aws"
+      ],
+      "job_type": "full_time",
+      "publication_date": "2026-11-19T14:58:42",
+      "candidate_required_location": "Worldwide",
+      "salary": "$35,3k- $52k",
+      "description": "<p>We are hiring a <strong>Senior Backend Engineer</strong> to build services. Requirements: Python, PostgreSQL, Docker.</p><ul><li>Remote first</li></ul>"
+    },
+    {
+      "id": 1002,
+      "url": "https://remotive.com/remote-jobs/software-development/frontend-developer-react-1002",
+      "title": "Frontend Developer React",
+      "company_name": "Acme Labs 1002",
+      "company_logo": "https://remotive.com/logo.png",
+      "category": "Software Development",
+      "tags": [
+        "python",
+        "aws"
+      ],
+      "job_type": "full_time",
+      "publication_date": "2026-11-19T14:58:42",
+      "candidate_required_location": "USA",
+      "salary": "$170k - $200k",
+      "description": "<p>We are hiring a <strong>Frontend Developer React</strong> to build services. Requirements: Python, PostgreSQL, Docker.</p><ul><li>Remote first</li></ul>"
+    },
+    {
+      "id": 1003,
+      "url": "https://remotive.com/remote-jobs/software-development/machine-learning-engineer-1003",
+      "title": "Machine Learning Engineer",
+      "company_name": "Acme Labs 1003",
+      "company_logo": "https://remotive.com/logo.png",
+      "category": "Software Development",
+      "tags": [
+        "python",
+        "aws"
+      ],
+      "job_type": "full_time",
+      "publication_date": "2026-11-19T14:58:42",
+      "candidate_required_location": "Worldwide",
+      "salary": "",
+      "description": "<p>We are hiring a <strong>Machine Learning Engineer</strong> to build services. Requirements: Python, PostgreSQL, Docker.</p><ul><li>Remote first</li></ul>"
+    },
+    {
+      "id": 1004,
+      "url": "https://remotive.com/remote-jobs/devops-/-sysadmin/devops-engineer-1004",
+      "title": "DevOps Engineer",
+      "company_name": "Acme Labs 1004",
+      "company_logo": "https://remotive.com/logo.png",
+      "category": "DevOps / Sysadmin",
+      "tags": [
+        "python",
+        "aws"
+      ],
+      "job_type": "full_time",
+      "publication_date": "2026-11-19T14:58:42",
+      "candidate_required_location": "Europe, USA, Canada, APAC",
+      "salary": "",
+      "description": "<p>We are hiring a <strong>DevOps Engineer</strong> to build services. Requirements: Python, PostgreSQL, Docker.</p><ul><li>Remote first</li></ul>"
+    },
+    {
+      "id": 1005,
+      "url": "https://remotive.com/remote-jobs/data/data-analyst-1005",
+      "title": "Data Analyst",
+      "company_name": "Acme Labs 1005",
+      "company_logo": "https://remotive.com/logo.png",
+      "category": "Data",
+      "tags": [
+        "python",
+        "aws"
+      ],
+      "job_type": "contract",
+      "publication_date": "2026-11-20T09:00:00",
+      "candidate_required_location": "Worldwide",
+      "salary": "",
+      "description": "<p>We are hiring a <strong>Data Analyst</strong> to build services. Requirements: Python, PostgreSQL, Docker.</p><ul><li>Remote first</li></ul>"
+    },
+    {
+      "id": 1006,
+      "url": "https://remotive.com/remote-jobs/software-development/full-stack-developer-1006",
+      "title": "Full Stack Developer",
+      "company_name": "Acme Labs 1006",
+      "company_logo": "https://remotive.com/logo.png",
+      "category": "Software Development",
+      "tags": [
+        "python",
+        "aws"
+      ],
+      "job_type": "full_time",
+      "publication_date": "2026-11-19T14:58:42",
+      "candidate_required_location": "India",
+      "salary": "",
+      "description": "<p>We are hiring a <strong>Full Stack Developer</strong> to build services. Requirements: Python, PostgreSQL, Docker.</p><ul><li>Remote first</li></ul>"
+    },
+    {
+      "id": 1007,
+      "url": "https://remotive.com/remote-jobs/sales/sales-development-representative-1007",
+      "title": "Sales Development Representative",
+      "company_name": "Acme Labs 1007",
+      "company_logo": "https://remotive.com/logo.png",
+      "category": "Sales",
+      "tags": [
+        "python",
+        "aws"
+      ],
+      "job_type": "full_time",
+      "publication_date": "2026-11-19T14:58:42",
+      "candidate_required_location": "Worldwide",
+      "salary": "",
+      "description": "<p>We are hiring a <strong>Sales Development Representative</strong> to build services. Requirements: Python, PostgreSQL, Docker.</p><ul><li>Remote first</li></ul>"
+    },
+    {
+      "id": 1008,
+      "url": "https://remotive.com/remote-jobs/customer-support/customer-support-specialist-1008",
+      "title": "Customer Support Specialist",
+      "company_name": "Acme Labs 1008",
+      "company_logo": "https://remotive.com/logo.png",
+      "category": "Customer Support",
+      "tags": [
+        "python",
+        "aws"
+      ],
+      "job_type": "full_time",
+      "publication_date": "2026-11-19T14:58:42",
+      "candidate_required_location": "USA",
+      "salary": "",
+      "description": "<p>We are hiring a <strong>Customer Support Specialist</strong> to build services. Requirements: Python, PostgreSQL, Docker.</p><ul><li>Remote first</li></ul>"
+    },
+    {
+      "id": 1003,
+      "url": "https://remotive.com/remote-jobs/software-development/machine-learning-engineer-1003",
+      "title": "Machine Learning Engineer (updated)",
+      "company_name": "Acme Labs 1003",
+      "company_logo": "https://remotive.com/logo.png",
+      "category": "Software Development",
+      "tags": [
+        "python",
+        "aws"
+      ],
+      "job_type": "full_time",
+      "publication_date": "2026-11-19T14:58:42",
+      "candidate_required_location": "Worldwide",
+      "salary": "",
+      "description": "<p>We are hiring a <strong>Machine Learning Engineer</strong> to build services. Requirements: Python, PostgreSQL, Docker.</p><ul><li>Remote first</li></ul>"
+    }
+  ]
+}
