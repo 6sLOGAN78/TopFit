@@ -113,6 +113,7 @@ def company_from_slug(slug: str) -> str:
 
 
 Sleep = Callable[[float], Awaitable[None]]
+ScopeFlush = Callable[[], Awaitable[None]]
 
 
 class BoardAdapter:
@@ -127,6 +128,7 @@ class BoardAdapter:
         self._engine = ctx.engine
         self._sleep = sleep
         self._result = FetchResult()
+        self._scope_flush: ScopeFlush | None = None
 
     def configured(self) -> bool:
         return True
@@ -156,15 +158,29 @@ class BoardAdapter:
         )
         return payload, None
 
+    def set_scope_flush(self, hook: ScopeFlush | None) -> None:
+        """Register a callback awaited after each board's jobs were yielded (pipeline flush)."""
+        self._scope_flush = hook
+
     # ---------------------------------------------------------------------------------------
     async def fetch_boards(self) -> AsyncIterator[RawJob]:
-        """Fetch all active boards; callers must ``sync_seeds`` first (each adapter's fetch)."""
+        """Fetch all active boards; callers must ``sync_seeds`` first (each adapter's fetch).
+
+        Memory contract (T-02-75): at most one board's postings are referenced at a time. The
+        2026-11-22 production Greenhouse run (4,337 postings from 13 boards with full HTML)
+        peaked at 1023 of 1024 MiB because a board's payload, parsed list and dict stayed alive
+        while the next board was fetched. Now each board is fetched, parsed, its payload
+        released, its jobs yielded, its dict cleared, and the scope-flush hook (the pipeline's
+        normalise + upsert of the buffered postings) awaited, all before the next request. The
+        peak is one board per source instead of the whole source.
+        """
         self._result = FetchResult()
         boards = await active_boards(self._engine, self.ats)
         async with build_client() as client:
             for n, board in enumerate(boards):
                 if n:
                     await self._sleep(self._cfg.request_interval_seconds)
+                payload: object = None
                 try:
                     payload, host = await self.get_payload(client, board)
                 except InvalidBoardSlug:
@@ -185,12 +201,15 @@ class BoardAdapter:
                     continue
                 if not self.payload_ok(payload):
                     self._result.failed_scopes[board.slug] = "InvalidPayload:None"
+                    payload = None  # never hold a bad payload across the next fetch
                     continue
                 jobs, invalid = self.parse(payload, board.slug)
+                del payload  # the raw board JSON is the largest object; drop it first
                 self._result.invalid_items += invalid
                 unique: dict[str, RawJob] = {}
                 for job in jobs:
                     unique[job.source_job_id] = job  # last wins
+                del jobs
                 self._result.complete_scopes.add(board.slug)
                 self._result.scope_counts[board.slug] = len(unique)
                 await record_board_check(
@@ -204,6 +223,11 @@ class BoardAdapter:
                 )
                 for job in unique.values():
                     yield job
+                    del job  # the loop variable would keep the board's last posting alive
+                unique.clear()
+                del unique
+                if self._scope_flush is not None:
+                    await self._scope_flush()
         log.info(
             "source_fetch_done",
             source=self.name,

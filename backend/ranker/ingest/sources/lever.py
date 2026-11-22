@@ -148,6 +148,7 @@ class LeverAdapter(BoardAdapter):
         await sync_seeds(self._engine, seeds_for(self.ats, self._cfg))
         async for job in self.fetch_boards():
             yield job
+            del job  # do not pin the last posting while the next board is fetched (T-02-75)
 
     def request(self, board: Board) -> tuple[str, dict[str, str]]:
         return board_request(board.slug, board.host)

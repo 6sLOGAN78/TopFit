@@ -205,6 +205,7 @@ async def test_refusal_stops_everything_without_retry() -> None:
     }
     assert p2.call_count == 1 and java.call_count == 0
     assert res.calls_used == 3  # robots, page 1, refused page 2
+    assert res.extra_notes["source_refused"] == {"reason": "FetchRefused:403"}
 
 
 @respx.mock
