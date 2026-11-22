@@ -75,3 +75,77 @@ Adzuna IT category: it-jobs
 Adzuna salary period: year
 ING-13 decision: pull-in
 Pull-in is forced by D-14 (use every reachable source), not by the D-01 volume rule alone; Greenhouse, Lever and Ashby also supply most of the measured API volume (769 of about 814).
+
+## Production measurement (2026-11-22)
+
+Host topfit.duckdns.org (GCP e2-medium, 4 GB), image `sha-f2d24ec`. Initial backfill ran 14:59 to 15:16 UTC, one source at a time, as one-off `run --rm --no-deps worker` containers. Checks before the backfill: readyz ok (pgvector 0.8.7, 384-d embedding), `alembic current` 0005 (head), `ranker.selfcheck` ok with all eight configs, exactly one `scheduler_lock_acquired` in the worker logs.
+
+### Counts
+
+| Measure | Value |
+|---|---|
+| Active canonical jobs with an embedding (`BAAI/bge-small-en-v1.5`) | 1838 |
+| Active-job target | 1500 |
+| Active jobs, all rows | 2063 (1838 canonical, 225 duplicates grouped under a canonical) |
+| Canonical without an embedding | 0 |
+| Ghost-flagged (active) | 841 |
+| Multi-source groups (active) | 13 |
+| Adzuna calls | 0 (disabled, budget 0) |
+
+Per source (active canonical embedded): arbeitnow 707, greenhouse 621, ashby 431, lever 38, remoteok 26, jobicy 8, remotive 7, internshala 0. That is seven of the eight enabled sources. Internshala is the gap: the first request from the production host returned a bot-challenge page (`source_refused`, reason `challenge:200`), so the fetcher stopped after 2 calls by design (D-15, no bypass or retry). The run is recorded as `failed` with no rows written, and nothing was expired. The 1500 target is met without it, but the scheduled Internshala runs will keep failing from this host unless the page stops challenging; there is no fix inside the D-15 rules.
+
+Cities: Bengaluru 142 and Gurugram 27 active jobs; no "Bangalore" or "Gurgaon" spellings remain.
+
+### Ingest runs (D-20 counters)
+
+| source | mode | status | start UTC | fetched | in_scope | inserted | updated | unchanged | expired | failed | skipped | dup grouped | ghost | reposts | calls |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| greenhouse | incremental | succeeded | 14:59 | 4337 | 782 | 782 | 0 | 0 | 0 | 0 | 3555 | 149 | 568 | 0 | 13 |
+| lever | incremental | succeeded | 15:04 | 309 | 38 | 38 | 0 | 0 | 0 | 0 | 271 | 0 | 28 | 0 | 5 |
+| ashby | incremental | succeeded | 15:05 | 1410 | 458 | 458 | 0 | 0 | 0 | 0 | 952 | 27 | 245 | 0 | 8 |
+| internshala | incremental | failed | 15:07 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 2 |
+| arbeitnow | incremental | succeeded | 15:07 | 5993 | 744 | 744 | 0 | 0 | 0 | 0 | 5249 | 49 | 0 | 0 | 54 |
+| remoteok | incremental | succeeded | 15:14 | 100 | 26 | 26 | 0 | 0 | 0 | 0 | 74 | 4 | 0 | 0 | 1 |
+| jobicy | incremental | succeeded | 15:14 | 50 | 8 | 8 | 0 | 0 | 0 | 0 | 42 | 1 | 0 | 0 | 1 |
+| remotive | incremental | succeeded | 15:14 | 16 | 7 | 7 | 0 | 0 | 0 | 0 | 9 | 0 | 0 | 0 | 1 |
+| remotive (admin endpoint) | incremental | succeeded | 15:19 | 16 | 7 | 0 | 0 | 7 | 0 | 0 | 9 | 0 | 0 | 0 | 1 |
+
+Embedding ran inside each ingest run; the separate `embed --missing` pass found nothing left. The admin endpoint `POST /api/admin/ingest/remotive` returned 202 and the run completed.
+
+### Board discovery
+
+`boards discover`: 40 probes, 0 added, 40 rejected (almost all `not_found`: the Indian candidates such as browserstack, cashfree, chargebee, cleartax, clevertap and zepto have no public board on these ATSes; one `below_threshold:0`). Active seed boards: greenhouse 14, lever 5, ashby 8 (as measured in the spike).
+
+### Enrichment and LLM spend
+
+Anthropic key is not set on the server (owner chose skip-anthropic). `enrich_job` tasks: 1788 queued, none run. `llm_calls` this month: 0 calls, $0. Unknown D-19 fields stay `unknown` (industry is set from the curated company map where known).
+
+### Memory (docker stats and cgroup `memory.peak`, MB)
+
+| snapshot | worker (scheduler) | api | db | one-off run container |
+|---|---|---|---|---|
+| before-backfill | 78 (peak 78) | 298 (peak 574) | 43 (peak 104) | none |
+| during greenhouse (stats sampled) | 78 | 298 | 81 | 1023 of 1024 limit, host swap used 513 |
+| during arbeitnow ingest | 78 (peak 78) | 298 (peak 574) | 212 (peak 343) | 189 |
+| during embed pass | 78 (peak 78) | 298 (peak 574) | 231 (peak 416) | 97 (peak 102) |
+
+Finding: the Greenhouse one-off container sat at the 1 GiB `mem_limit` with host swap in use for about 5 minutes (it holds all 4337 raw postings plus the embedding model) and slowed down (some 32-row embed batches took 22 to 30 s against 6 to 8 s normally). It finished without an OOM kill. The scheduled Greenhouse run happens in the long-running worker, which has the same 1 GiB limit plus the model, so it can be killed; the next step is to stream or chunk the Greenhouse fetch, or raise the worker limit, before relying on the schedule.
+
+### Sample (5 random active rows)
+
+| source | title | country | remote_type | eligibility | salary INR/yr | seniority | employment | onsite days | industry |
+|---|---|---|---|---|---|---|---|---|---|
+| greenhouse | Principal Engineer - Privacy | none | unknown | us_only | none | lead | unknown | none | ai_ml |
+| ashby | Software Engineer, Financial Engineering | US | remote | worldwide | 23,541,000 to 39,382,500 (stated) | senior | full_time | 0 | ai_ml |
+| arbeitnow | Senior Consultant, Agentic AI & AI Ventures | none | unknown | eu_only | none | senior | unknown | none | unknown |
+| greenhouse | Software Quality Assurance Engineer | none | unknown | unknown | none | mid | unknown | none | fintech |
+| ashby | Security Engineer, Detection and Response | IE | remote | unknown | none | mid | full_time | 0 | saas |
+
+Spot checks: Bengaluru and Gurugram canonical names are present; `visa_sponsorship` and `relocation` are `unknown` on all five rows (allowed); `industry` and `onsite_days_per_week` are populated where known. No Internshala rows exist, so Internshala detail URLs and source labels could not be checked on production.
+
+### Ingestion eval headline (docs/evals/ingest-normalisation.md)
+
+78 labelled real postings, 0 of 78 owner-reviewed so far. in_scope accuracy 0.91 (n 70); remote_type 0.89, seniority 0.89, employment_type 1.00, salary 1.00, city 1.00, remote_eligibility 0.67, industry 0.44 (n 9 each). Small-sample smoke test, not precision estimates.
+
+ING-12 status: pending-backfill
+Count is above target (1838 vs 1500) but the first full morning read and one intraday scheduled run have not completed yet, so the verdict stays pending until the Task 3 recheck after 24 h.
