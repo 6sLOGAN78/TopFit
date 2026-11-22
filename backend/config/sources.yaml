@@ -1,8 +1,17 @@
+# Expiry thresholds (plan 02-11, ING-08), read by ranker.ingest.expiry.ExpiryConfig:
+#   absence_missed_runs: a full-feed job expires after missing this many COMPLETE runs of its scope
+#     (2, per ING-08; the morning + intraday schedule means two runs happen within a day).
+#   volume_guard: a run that fetched < ratio x median(fetched of the last `window` succeeded runs)
+#     expires nothing; fewer than `min_history` succeeded runs means cold start, nothing expires.
+#   ttl_days / unseen_days (capped-window feeds): expire by posted age, or by not being seen for
+#     unseen_days while the source had a succeeded run in the last 48 h.
 # UTC; 05:00 IST morning read (D-17, finishes before 06:30 IST) and 17:00 IST intraday.
 # Remotive terms: <= 4 fetches/day, credit + link back, no signup wall.
 remotive:
   enabled: true
   expiry_policy: absence
+  absence_missed_runs: 2
+  volume_guard: {ratio: 0.5, window: 5, min_history: 2}
   max_runs_per_day: 4
   url: https://remotive.com/api/remote-jobs
   schedule:
@@ -24,6 +33,7 @@ adzuna:
     calls_per_day: 0          # ADR: Adzuna calls/day budget
     calls_per_month: 0        # min(ADR monthly-derived, 31 x calls_per_day)
   min_interval_seconds: 2.5
+  volume_guard: {ratio: 0.5, window: 5, min_history: 2}
   ttl_days: 45
   unseen_days: 30
   queries:
