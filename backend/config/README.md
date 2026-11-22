@@ -14,7 +14,12 @@ Files added by later plans:
 - `skills.yaml` - skill taxonomy and aliases
 - `llm_prices.yaml` - per-model token prices for cost accounting
 - `ranking.yaml` - search retrieval parameters (K values, RRF constant, vector mode); any
-  change alters the `pipeline_version` stored in `search_logs`
+  change alters the `pipeline_version` stored in `search_logs`. Guest ranking weights:
+  `rrf` (normalised fusion score), `recency` (freshness bonus decaying with
+  `recency_half_life_days`), `region_certain` (India/APAC/worldwide or IN country),
+  `salary_known` (only when a salary filter is set), `ghost_penalty`,
+  `unknown_seniority_penalty` (only when a seniority filter is set);
+  `diversity.max_per_company_top10` caps jobs per company in the top 10
 - `query_synonyms.yaml` - query-time synonyms (SDE to software engineer), stopwords and role
   words for the rules query parser. `skills.yaml` entries may set `query_ok: true` so short
   queries match an ambiguous skill ("go", "r") without context

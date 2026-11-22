@@ -1,6 +1,6 @@
 # Search ranking configuration (SRCH-02..04). Loaded by ranker.search.config; changing any
 # value changes the pipeline_version recorded in search_logs.
-version: 1
+version: 2
 
 retrieval:
   lexical_k: 100          # candidates from the english + skills full-text leg
@@ -12,3 +12,18 @@ retrieval:
   set_aside_universe_k: 200
 
 page_size: 20
+
+# Guest ranking (D-11): score = w.rrf * rrf_norm + w.recency * exp(-age_days / tau)
+#   + w.region_certain * region_certain + w.salary_known * salary_known (salary filter set only)
+#   - w.ghost_penalty * ghost - w.unknown_seniority_penalty * seniority_unknown (seniority filter only)
+guest_weights:
+  rrf: 1.0
+  recency: 0.15
+  region_certain: 0.10
+  salary_known: 0.05
+  ghost_penalty: 0.25
+  unknown_seniority_penalty: 0.05
+recency_half_life_days: 14   # tau of the freshness decay, about two weeks
+
+diversity:
+  max_per_company_top10: 2   # extra jobs of one company move to just after position 10
