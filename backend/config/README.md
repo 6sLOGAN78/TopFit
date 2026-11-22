@@ -15,3 +15,6 @@ Files added by later plans:
 - `llm_prices.yaml` - per-model token prices for cost accounting
 - `ranking.yaml` - search retrieval parameters (K values, RRF constant, vector mode); any
   change alters the `pipeline_version` stored in `search_logs`
+- `query_synonyms.yaml` - query-time synonyms (SDE to software engineer), stopwords and role
+  words for the rules query parser. `skills.yaml` entries may set `query_ok: true` so short
+  queries match an ambiguous skill ("go", "r") without context

@@ -6,7 +6,6 @@ ranking signals on this path without changing the response contract.
 """
 
 import json
-import re
 import time
 from collections import OrderedDict
 from collections.abc import Sequence
@@ -22,21 +21,26 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from ranker.embeddings.embedder import Embedder
 from ranker.embeddings.service import vector_literal
-from ranker.ingest.skills import SkillMatcher, default_matcher
+from ranker.ingest.skills import default_matcher
 from ranker.llm.client import LLMGateway
 from ranker.search.config import RankingConfig, pipeline_version, ranking_config
 from ranker.search.models import (
     JobResult,
     ParsedSummary,
     ParseModel,
+    RelaxOption,
     SearchFilters,
     SearchResponse,
+    SetAsideCount,
 )
+from ranker.search.parse import lex_text_for, parse_query
 from ranker.search.sql import (
     HYDRATE_SQL,
     Legs,
     apply_vector_mode,
     build_hybrid_sql,
+    build_set_aside_sql,
+    compile_filters,
     skill_tokens,
 )
 from ranker.settings import Settings
@@ -57,9 +61,6 @@ SOURCE_DISPLAY_NAMES = {
     "ashby": "Ashby",
     "hn": "Hacker News",
 }
-
-_EDGE_PUNCT = ",;:()[]\"'"
-_SYMBOL_CHARS = re.compile(r"[+#.]")
 
 _INSERT_LOG = text(
     "INSERT INTO search_logs (guest_id, surface, query_text, filters, parse, pipeline_version, "
@@ -101,22 +102,6 @@ class _EmbedCache:
 
 
 _embed_cache = _EmbedCache(EMBED_CACHE_SIZE)
-
-
-def lex_text_for(q: str, matcher: SkillMatcher | None = None) -> str:
-    """Query text for the english leg with symbol skills removed.
-
-    ``C++`` would otherwise tokenise to ``c`` and OR-match every C job; those skills are
-    matched through the simple-config skills leg instead.
-    """
-    m = matcher or default_matcher()
-    kept: list[str] = []
-    for word in q.split():
-        bare = word.strip(_EDGE_PUNCT)
-        if bare and _SYMBOL_CHARS.search(bare) and m.extract(bare):
-            continue
-        kept.append(word)
-    return " ".join(kept)
 
 
 async def _embed(embedder: Embedder, model: str, query: str) -> list[float]:
@@ -199,29 +184,39 @@ async def search(
     if not q:
         return _empty_response(filters, cfg, pv)
 
-    matcher = default_matcher()
-    skills = matcher.extract(q)
-    tokens = skill_tokens(skills, matcher)
-    lex_text = lex_text_for(q, matcher)
+    parse = await parse_query(
+        q,
+        req.filters,
+        req.auto_filters,
+        engine=engine,
+        gateway=gateway,
+        parse_model=req.parse_model,
+        settings=settings,
+    )
+    filters = parse.filters
+    skills = parse.skills
+    tokens = skill_tokens(skills, default_matcher())
+    compiled = compile_filters(filters)
 
-    degraded = False
+    degraded = parse.degraded
     qvec: list[float] | None = None
     if embedder is not None:
         try:
-            qvec = await _embed(embedder, settings.embed_model, q)
+            qvec = await _embed(embedder, settings.embed_model, parse.embed_text or q)
         except Exception as exc:  # LLM/embedding trouble must never break search
             log.error("query_embed_failed", error_type=type(exc).__name__)
     if qvec is None:
         degraded = True
 
     params: dict[str, Any] = {
-        "lex_text": lex_text,
+        "lex_text": parse.lex_text,
         "skill_tokens": tokens,
         "w_skill": ret.skill_rank_weight,
         "lex_k": ret.lexical_k,
         "vec_k": ret.vector_k,
         "rrf_k": ret.rrf_k,
         "fused_k": ret.fused_k,
+        **compiled.params,
     }
     legs: Legs = "both"
     if qvec is None:
@@ -229,12 +224,31 @@ async def search(
         del params["vec_k"]
     else:
         params["qvec"] = vector_literal(qvec)
-    stmt = build_hybrid_sql("", legs=legs)
+    stmt = build_hybrid_sql(compiled.sql, legs=legs)
 
     async with engine.begin() as conn:
         if qvec is not None:
             await apply_vector_mode(conn, ret.vector_mode)
         fused = (await conn.execute(stmt, params)).all()
+        set_aside: list[SetAsideCount] = []
+        relax: list[RelaxOption] = []
+        if compiled.clauses:
+            sa_params = {
+                **params,
+                "lex_k": ret.set_aside_universe_k,
+                "vec_k": ret.set_aside_universe_k,
+            }
+            counts = (
+                (await conn.execute(build_set_aside_sql(compiled.clauses, legs), sa_params))
+                .mappings()
+                .one()
+            )
+            for key in compiled.clauses:
+                if counts[f"sa_{key}"] > 0:
+                    set_aside.append(SetAsideCount(filter=key, count=int(counts[f"sa_{key}"])))
+                if key != "geo" and counts[f"rx_{key}"] > 0:
+                    relax.append(RelaxOption(filter=key, count=int(counts[f"rx_{key}"])))
+            relax.sort(key=lambda r: -r.count)
         ranked_ids = [int(r.id) for r in fused]
         page_ids = ranked_ids[: cfg.page_size]
         hydrated: dict[int, Any] = {}
@@ -264,19 +278,38 @@ async def search(
         lex_hits = sum(1 for r in fused if r.lex_rank is not None)
         vec_hits = sum(1 for r in fused if r.vec_rank is not None)
         latency_ms = int((time.perf_counter() - started) * 1000)
-        parsed = ParsedSummary(filters=filters, skills=skills)
+        parsed = ParsedSummary(
+            chips=parse.chips,
+            parse_source=parse.parse_source,
+            skills=skills,
+            filters=filters,
+            cached=parse.cached,
+        )
         log_id = (
             await conn.execute(
                 _INSERT_LOG,
                 {
                     "guest_id": req.guest_id,
                     "q": q[:MAX_LOGGED_QUERY_CHARS],
-                    "filters": filters.model_dump_json(),
-                    "parse": json.dumps({"source": parsed.parse_source, "skills": skills}),
+                    "filters": json.dumps(
+                        {
+                            **filters.model_dump(),
+                            "chip_sources": {c.field: c.source for c in parse.chips},
+                        }
+                    ),
+                    "parse": json.dumps(
+                        {
+                            "source": parsed.parse_source,
+                            "provider": None,
+                            "cached": parse.cached,
+                            "residue_count": len(parse.residue),
+                            "prompt_version": parse.prompt_version,
+                        }
+                    ),
                     "pv": pv,
                     "results": json.dumps(results),
                     "ranked": ranked_ids,
-                    "set_aside": "{}",
+                    "set_aside": json.dumps({sa.filter: sa.count for sa in set_aside}),
                     "lex_hits": lex_hits,
                     "vec_hits": vec_hits,
                     "degraded": degraded,
@@ -299,12 +332,12 @@ async def search(
         next_cursor=None,
         search_log_id=log_id,
         parsed=parsed,
-        set_aside=[],
+        set_aside=set_aside,
         set_aside_universe=ret.set_aside_universe_k,
-        relax=[],
+        relax=relax,
         degraded=degraded,
         pipeline_version=pv,
     )
 
 
-__all__ = ["SearchRequest", "search", "source_display_name"]
+__all__ = ["SearchRequest", "lex_text_for", "search", "source_display_name"]
