@@ -2,13 +2,24 @@
 
 Jobs are never hard-deleted. Every expiry records ``expired_by_run_id`` so a bad run can be
 undone with :func:`reactivate_run`. All SQL is set-based with bound parameters only.
+
+Board sources (Greenhouse, Lever, Ashby) add two rules on top of per-board absence expiry:
+
+- A dropped board (a 404, or two empty weekly rechecks) is no longer a complete scope, so its
+  jobs would never absence-expire. :func:`expire_dropped_board` expires them on drop with the
+  board-maintenance run id, and :func:`expire_stale_board_jobs` catches any dropped board left
+  over (e.g. a 404 seen by the daily fetch, which has no maintenance run).
+- Age fallback: an active job not listed for ``board_unseen_days`` expires, but only when its
+  board answered successfully (``last_checked_at``) within ``BOARD_HEALTHY_HOURS``. A failing
+  board, a rejected board, a scope without a registry row, or a failed or guard-blocked run
+  expires nothing, so an outage can never empty the index.
 """
 
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
@@ -26,6 +37,10 @@ class ExpiryConfig(BaseModel):
     volume_guard: VolumeGuard = VolumeGuard()
     ttl_days: int | None = None
     unseen_days: int | None = None
+    board_unseen_days: int = Field(default=7, ge=1, le=365)
+
+
+BOARD_HEALTHY_HOURS = 48
 
 
 @dataclass
@@ -102,6 +117,57 @@ async def expire_absent_after_run(
             "scopes": list(scopes),
             "run_id": run_id,
             "n": cfg.absence_missed_runs,
+        },
+    )
+    return int(result.rowcount)  # pyright: ignore[reportAttributeAccessIssue]
+
+
+async def expire_dropped_board(
+    conn: AsyncConnection, *, source: str, slug: str, run_id: int
+) -> int:
+    """Expire the active jobs of one board that is ``dropped`` in the registry. Returns expired."""
+    result = await conn.execute(
+        text(
+            "UPDATE jobs SET status = 'expired', expired_by_run_id = :run_id "
+            "WHERE source = :source AND source_scope = :slug AND status = 'active' "
+            "AND EXISTS (SELECT 1 FROM source_boards b WHERE b.ats = :source "
+            "AND b.slug = :slug AND b.status = 'dropped')"
+        ),
+        {"source": source, "slug": slug, "run_id": run_id},
+    )
+    return int(result.rowcount)  # pyright: ignore[reportAttributeAccessIssue]
+
+
+async def expire_stale_board_jobs(
+    conn: AsyncConnection,
+    *,
+    source: str,
+    run_id: int,
+    now: datetime,
+    cfg: ExpiryConfig,
+) -> int:
+    """Board-source fallback: expire jobs of dropped boards, and jobs unseen for
+    ``board_unseen_days`` whose board answered OK within ``BOARD_HEALTHY_HOURS``.
+
+    Callers run this only after a succeeded run passed the source-level volume guard.
+    """
+    result = await conn.execute(
+        text(
+            "UPDATE jobs SET status = 'expired', expired_by_run_id = :run_id "
+            "WHERE jobs.source = :source AND jobs.status = 'active' AND ("
+            " EXISTS (SELECT 1 FROM source_boards b WHERE b.ats = jobs.source "
+            "  AND b.slug = jobs.source_scope AND b.status = 'dropped')"
+            " OR (jobs.last_seen_at < :now - make_interval(days => :days)"
+            "  AND EXISTS (SELECT 1 FROM source_boards b WHERE b.ats = jobs.source "
+            "   AND b.slug = jobs.source_scope AND b.status IN ('seed', 'active') "
+            "   AND b.last_checked_at >= :now - make_interval(hours => :hours))))"
+        ),
+        {
+            "source": source,
+            "run_id": run_id,
+            "now": now,
+            "days": cfg.board_unseen_days,
+            "hours": BOARD_HEALTHY_HOURS,
         },
     )
     return int(result.rowcount)  # pyright: ignore[reportAttributeAccessIssue]

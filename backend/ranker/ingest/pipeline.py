@@ -15,11 +15,13 @@ from ranker.config_loader import load_config
 from ranker.embeddings.embedder import Embedder, build_embedder
 from ranker.embeddings.service import embed_missing
 from ranker.ingest import store
+from ranker.ingest.board_registry import ALL_ATS
 from ranker.ingest.dedupe import recompute_dedupe
 from ranker.ingest.enrich import enqueue_enrichment
 from ranker.ingest.expiry import (
     ExpiryConfig,
     expire_absent_after_run,
+    expire_stale_board_jobs,
     expire_ttl,
     volume_guard,
 )
@@ -251,9 +253,17 @@ async def _expire(
             if decision.allowed:
                 allowed_scopes.append(scope)
         guard["scopes"] = scope_notes
-        return await expire_absent_after_run(
+        absent = await expire_absent_after_run(
             conn, source=source, run_id=run_id, scopes=allowed_scopes, cfg=cfg
         )
+        if source not in ALL_ATS:
+            return absent
+        # Dropped boards and stale jobs of healthy boards (only reached past the source guard).
+        fallback = await expire_stale_board_jobs(
+            conn, source=source, run_id=run_id, now=datetime.now(UTC), cfg=cfg
+        )
+        guard["board_fallback"] = fallback
+        return absent + fallback
 
 
 async def _signals(

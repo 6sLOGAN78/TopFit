@@ -21,6 +21,9 @@
 #     expires nothing; fewer than `min_history` succeeded runs means cold start, nothing expires.
 #   ttl_days / unseen_days (capped-window feeds): expire by posted age, or by not being seen for
 #     unseen_days while the source had a succeeded run in the last 48 h.
+#   board_unseen_days (board sources only): a job not listed for this many days expires, but only
+#     if its board answered OK in the last 48 h; jobs of a dropped board expire on drop. A failing
+#     board or a guard-blocked run expires nothing.
 # UTC; 05:00 IST morning read (D-17, finishes before 06:30 IST) and 17:00 IST intraday.
 # Remotive terms: <= 4 fetches/day, credit + link back, no signup wall.
 remotive:
@@ -71,6 +74,7 @@ greenhouse:
   expiry_policy: absence
   absence_missed_runs: 2
   volume_guard: {ratio: 0.5, window: 5, min_history: 2}
+  board_unseen_days: 7
   max_runs_per_day: 4
   min_in_scope_jobs: 5
   max_discovery_probes: 40
@@ -133,6 +137,7 @@ lever:
   expiry_policy: absence
   absence_missed_runs: 2
   volume_guard: {ratio: 0.5, window: 5, min_history: 2}
+  board_unseen_days: 7
   max_runs_per_day: 4
   min_in_scope_jobs: 5
   max_discovery_probes: 40
@@ -151,6 +156,7 @@ ashby:
   expiry_policy: absence
   absence_missed_runs: 2
   volume_guard: {ratio: 0.5, window: 5, min_history: 2}
+  board_unseen_days: 7
   max_runs_per_day: 4
   min_in_scope_jobs: 5
   max_discovery_probes: 40
