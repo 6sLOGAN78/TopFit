@@ -15,3 +15,6 @@ web/out/
 evals/data/job_pool_snapshot.jsonl.gz
 evals/data/pool.jsonl
 evals/results/
+
+# Claude Code agent worktrees (local only)
+.claude/worktrees/
