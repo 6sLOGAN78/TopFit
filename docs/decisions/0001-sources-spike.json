@@ -597,6 +597,105 @@
       "host": "global",
       "total": 42,
       "in_scope_estimate": 22
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "inmobi",
+      "status": "200",
+      "host": "global",
+      "total": 63,
+      "in_scope_estimate": 34,
+      "measured_at": "2026-11-28"
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "sigmoid",
+      "status": "200",
+      "host": "global",
+      "total": 43,
+      "in_scope_estimate": 38,
+      "measured_at": "2026-11-28"
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "glance",
+      "status": "200",
+      "host": "global",
+      "total": 21,
+      "in_scope_estimate": 11,
+      "measured_at": "2026-11-28"
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "observeai",
+      "status": "200",
+      "host": "global",
+      "total": 10,
+      "in_scope_estimate": 5,
+      "measured_at": "2026-11-28"
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "agoda",
+      "status": "200",
+      "host": "global",
+      "total": 328,
+      "in_scope_estimate": 15,
+      "measured_at": "2026-11-28"
+    },
+    {
+      "ats": "greenhouse",
+      "slug": "zenoti",
+      "status": "200",
+      "host": "global",
+      "total": 49,
+      "in_scope_estimate": 29,
+      "measured_at": "2026-11-28"
+    },
+    {
+      "ats": "lever",
+      "slug": "fampay",
+      "status": "200",
+      "host": "global",
+      "total": 13,
+      "in_scope_estimate": 13,
+      "measured_at": "2026-11-28"
+    },
+    {
+      "ats": "lever",
+      "slug": "hevodata",
+      "status": "200",
+      "host": "global",
+      "total": 42,
+      "in_scope_estimate": 41,
+      "measured_at": "2026-11-28"
+    },
+    {
+      "ats": "ashby",
+      "slug": "tekion",
+      "status": "200",
+      "host": "global",
+      "total": 86,
+      "in_scope_estimate": 59,
+      "measured_at": "2026-11-28"
+    },
+    {
+      "ats": "ashby",
+      "slug": "spotdraft",
+      "status": "200",
+      "host": "global",
+      "total": 11,
+      "in_scope_estimate": 7,
+      "measured_at": "2026-11-28"
+    },
+    {
+      "ats": "ashby",
+      "slug": "atlan",
+      "status": "200",
+      "host": "global",
+      "total": 8,
+      "in_scope_estimate": 4,
+      "measured_at": "2026-11-28"
     }
   ],
   "extra": {

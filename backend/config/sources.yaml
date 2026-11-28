@@ -83,6 +83,12 @@ greenhouse:
     - {hour: 22, minute: 0, batch: morning}   # 03:30 IST
     - {hour: 10, minute: 0}                   # 15:30 IST
   seeds:
+    - inmobi
+    - sigmoid
+    - glance
+    - observeai
+    - agoda
+    - zenoti
     - groww
     - gitlab
     - canonical
@@ -99,6 +105,12 @@ greenhouse:
   # display names used when the board payload has none; discovered boards fall back to
   # the title-cased slug
   company_names:
+    inmobi: InMobi
+    sigmoid: Sigmoid
+    glance: Glance
+    observeai: Observe.AI
+    agoda: Agoda
+    zenoti: Zenoti
     groww: Groww
     gitlab: GitLab
     canonical: Canonical
@@ -162,6 +174,8 @@ lever:
     - {hour: 22, minute: 15, batch: morning}   # 03:45 IST
     - {hour: 10, minute: 15}                   # 15:45 IST
   seeds:
+    - fampay
+    - hevodata
     - cred
     - meesho
     - paytm
@@ -170,6 +184,8 @@ lever:
   # display names used when the board payload has none; discovered boards fall back to
   # the title-cased slug
   company_names:
+    fampay: FamPay
+    hevodata: Hevo Data
     cred: CRED
     meesho: Meesho
     paytm: Paytm
@@ -189,6 +205,9 @@ ashby:
     - {hour: 22, minute: 25, batch: morning}   # 03:55 IST
     - {hour: 10, minute: 25}                   # 15:55 IST
   seeds:
+    - tekion
+    - spotdraft
+    - atlan
     - ramp
     - notion
     - openai
@@ -200,6 +219,9 @@ ashby:
   # display names used when the board payload has none; discovered boards fall back to
   # the title-cased slug
   company_names:
+    tekion: Tekion
+    spotdraft: SpotDraft
+    atlan: Atlan
     ramp: Ramp
     notion: Notion
     openai: OpenAI
