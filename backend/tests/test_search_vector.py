@@ -32,6 +32,8 @@ async def _run(
         await apply_vector_mode(conn, mode)
         if mode == "hnsw":
             await conn.execute(text("SELECT set_config('enable_seqscan', 'off', true)"))
+            # keep the planner off btree/bitmap paths so the plan check is not cost-flaky
+            await conn.execute(text("SELECT set_config('enable_bitmapscan', 'off', true)"))
         rows = (await conn.execute(stmt, _params())).all()
         plan = (
             await conn.execute(text("EXPLAIN (FORMAT JSON) " + stmt.text), _params())

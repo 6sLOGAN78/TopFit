@@ -51,6 +51,8 @@ async def search_jobs(
 ) -> SearchResponse:
     response.headers["Cache-Control"] = "no-store"
     cleaned = clean_query(q)
+    # city values go into SQL params too; NUL makes Postgres raise (500), so clean them like q
+    city = [c for c in (clean_query(x) for x in city or []) if c] or None
     state = request.app.state
     explicit = bool(city or remote_ok or min_lpa is not None or no_est or mode or seniority)
     filters = (

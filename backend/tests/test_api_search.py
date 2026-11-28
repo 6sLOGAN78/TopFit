@@ -77,3 +77,12 @@ def test_meta(client: TestClient, seeded: dict[str, int]) -> None:
     assert body.active_jobs == len(seeded)
     assert any("haiku" in m for m in body.parse_models)
     assert "Bengaluru" in body.cities
+
+
+def test_nul_in_city_is_not_500(client: TestClient, seeded: dict[str, int]) -> None:
+    """Schemathesis found NUL in ?city= reaching Postgres (500); it is now cleaned like q."""
+    r = client.get(
+        "/api/jobs/search",
+        params=[("q", "backend\x00"), ("city", "Pune\x00"), ("city", ""), ("city", "\x01")],
+    )
+    assert r.status_code == 200
